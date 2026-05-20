@@ -14,19 +14,48 @@
         /* Map Legend Styling */
         .legend {
             background: white;
-            padding: 10px;
+            padding: 15px;
             border-radius: 5px;
             box-shadow: 0 0 15px rgba(0,0,0,0.2);
-            line-height: 1.5em;
             color: #333;
             font-family: Arial, sans-serif;
         }
-        .legend i {
-            width: 18px;
-            height: 18px;
-            float: left;
-            margin-right: 8px;
-            opacity: 0.9;
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+            min-height: 50px; 
+        }
+        
+        .legend-circle-container {
+            width: 60px; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 10px;
+        }
+        
+        .legend-circle {
+            border-radius: 50%;
+            border: 1px solid #000;
+        }
+
+        /* NEW: Custom styles for the station labels */
+        .station-label {
+            color: yellow;
+            font-weight: bold;
+            font-size: 12px;
+            background: transparent; /* Removes the default white background */
+            border: none;            /* Removes the border */
+            box-shadow: none;        /* Removes the shadow box */
+            text-shadow: 1px 1px 2px black; /* Adds a black shadow to the text so it pops */
+        }
+        
+        /* Hides the little triangle pointer that usually comes with tooltips */
+        .leaflet-tooltip-left.station-label::before,
+        .leaflet-tooltip-right.station-label::before {
+            display: none;
         }
     </style>
 </head>
@@ -38,7 +67,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <script>
-        // 1. Initialize the map (Centered roughly on Malaysia)
+        // 1. Initialize the map
         var map = L.map('map').setView([2.5, 103.0], 8);
 
         // 2. Add the Esri Dark Gray Base Map
@@ -49,66 +78,89 @@
 
         // 3. Function to determine color based on rainfall
         function getColor(d) {
-            return d > 80 ? '#08519c' :  // 81 - 100+ mm (Dark Blue)
-                   d > 60 ? '#3182bd' :  // 61 - 80 mm
-                   d > 40 ? '#6baed6' :  // 41 - 60 mm
-                   d > 20 ? '#bdd7e7' :  // 21 - 40 mm
-                            '#eff3ff';   // 0 - 20 mm (Light Blue)
+            return d > 80 ? '#08519c' :  
+                   d > 60 ? '#3182bd' :  
+                   d > 40 ? '#6baed6' :  
+                   d > 20 ? '#bdd7e7' :  
+                            '#eff3ff';   
         }
 
-        // 4. Add a legend to the map
+        // 4. Function to determine circle radius (size) based on rainfall
+        function getRadius(d) {
+            return d > 80 ? 25 :  
+                   d > 60 ? 20 :  
+                   d > 40 ? 15 :  
+                   d > 20 ? 10 :  
+                            5;    
+        }
+
+        // 5. Add a legend to the map
         var legend = L.control({position: 'bottomright'});
         legend.onAdd = function (map) {
             var div = L.DomUtil.create('div', 'info legend'),
                 grades = [0, 21, 41, 61, 81],
                 labels = ['0 - 20 mm', '21 - 40 mm', '41 - 60 mm', '61 - 80 mm', '81 - 100+ mm'];
 
-            div.innerHTML += '<strong>Rainfall Amount</strong><br>';
+            div.innerHTML = '<strong>Rainfall Amount</strong><br><br>';
+            
             for (var i = 0; i < grades.length; i++) {
+                var r = getRadius(grades[i]);
+                var diameter = r * 2;
+                
                 div.innerHTML +=
-                    '<i style="background:' + getColor(grades[i]) + '"></i> ' +
-                    labels[i] + '<br>';
+                    '<div class="legend-item">' +
+                        '<div class="legend-circle-container">' +
+                            '<div class="legend-circle" style="background:' + getColor(grades[i]) + '; width:' + diameter + 'px; height:' + diameter + 'px;"></div>' +
+                        '</div>' +
+                        '<span>' + labels[i] + '</span>' +
+                    '</div>';
             }
             return div;
         };
         legend.addTo(map);
 
-        // 5. Load and parse the CSV data
+        // 6. Load and parse the CSV data
         Papa.parse("data.csv", {
             download: true,
             header: true,
             dynamicTyping: true,
-            skipEmptyLines: true, // <-- NEW: This prevents crashes from blank rows at the bottom of the CSV
+            skipEmptyLines: true, 
             error: function(err) {
-                // <-- NEW: This will alert you if the file gets blocked
                 alert("Could not load data.csv. Make sure you are viewing this via your GitHub Pages link, not a local file.");
             },
             complete: function(results) {
                 var data = results.data;
-                
-                // Get all the date column names (ignoring ID, Station Name, Lat, Long)
                 var dateColumns = Object.keys(data[0]).slice(4);
-                
                 var dateLayers = {};
 
                 dateColumns.forEach(function(date) {
                     var layerGroup = L.layerGroup();
 
                     data.forEach(function(row) {
-                        // Ensure Latitude and Longitude exist before plotting
                         if (row.Latitude && row.Longitude) {
                             var rainfall = row[date] || 0; 
+                            var currentRadius = getRadius(rainfall);
                             
                             var marker = L.circleMarker([row.Latitude, row.Longitude], {
-                                radius: 8,
+                                radius: currentRadius,
                                 fillColor: getColor(rainfall),
                                 color: "#000",
                                 weight: 1,
                                 opacity: 1,
-                                fillOpacity: 0.9
+                                fillOpacity: 0.8 
                             });
 
+                            // The popup that shows when you click the circle
                             marker.bindPopup("<b>" + row['Station Name'] + "</b><br>Date: " + date + "<br>Rainfall: " + rainfall + " mm");
+                            
+                            // NEW: The permanent label that stays on the map
+                            marker.bindTooltip(row['Station Name'], {
+                                permanent: true, 
+                                direction: 'right', 
+                                className: 'station-label',
+                                offset: [currentRadius, 0] // Pushes the text to the right side of the circle
+                            });
+
                             layerGroup.addLayer(marker);
                         }
                     });
@@ -116,10 +168,8 @@
                     dateLayers[date] = layerGroup;
                 });
 
-                // 6. Add Layer Control to toggle between dates
                 L.control.layers(dateLayers, null, {collapsed: false}).addTo(map);
 
-                // Load the first date by default
                 if (dateColumns.length > 0) {
                     dateLayers[dateColumns[0]].addTo(map);
                 }
