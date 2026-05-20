@@ -47,7 +47,7 @@
             maxZoom: 16
         }).addTo(map);
 
-        // 3. Function to determine color based on rainfall (symbology)
+        // 3. Function to determine color based on rainfall
         function getColor(d) {
             return d > 80 ? '#08519c' :  // 81 - 100+ mm (Dark Blue)
                    d > 60 ? '#3182bd' :  // 61 - 80 mm
@@ -78,25 +78,27 @@
             download: true,
             header: true,
             dynamicTyping: true,
+            skipEmptyLines: true, // <-- NEW: This prevents crashes from blank rows at the bottom of the CSV
+            error: function(err) {
+                // <-- NEW: This will alert you if the file gets blocked
+                alert("Could not load data.csv. Make sure you are viewing this via your GitHub Pages link, not a local file.");
+            },
             complete: function(results) {
                 var data = results.data;
                 
                 // Get all the date column names (ignoring ID, Station Name, Lat, Long)
                 var dateColumns = Object.keys(data[0]).slice(4);
                 
-                // Object to hold our layer groups
                 var dateLayers = {};
 
-                // Loop through each date column to create a layer
                 dateColumns.forEach(function(date) {
                     var layerGroup = L.layerGroup();
 
-                    // Loop through each row of data
                     data.forEach(function(row) {
+                        // Ensure Latitude and Longitude exist before plotting
                         if (row.Latitude && row.Longitude) {
                             var rainfall = row[date] || 0; 
                             
-                            // Create a circle marker
                             var marker = L.circleMarker([row.Latitude, row.Longitude], {
                                 radius: 8,
                                 fillColor: getColor(rainfall),
@@ -106,10 +108,7 @@
                                 fillOpacity: 0.9
                             });
 
-                            // Add a popup with data
                             marker.bindPopup("<b>" + row['Station Name'] + "</b><br>Date: " + date + "<br>Rainfall: " + rainfall + " mm");
-                            
-                            // Add marker to the specific date's layer
                             layerGroup.addLayer(marker);
                         }
                     });
