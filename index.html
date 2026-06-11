@@ -41,15 +41,15 @@
             border: 1px solid #000;
         }
 
-        /* NEW: Custom styles for the station labels */
+        /* Custom styles for the station labels */
         .station-label {
             color: yellow;
             font-weight: bold;
             font-size: 12px;
-            background: transparent; /* Removes the default white background */
-            border: none;            /* Removes the border */
-            box-shadow: none;        /* Removes the shadow box */
-            text-shadow: 1px 1px 2px black; /* Adds a black shadow to the text so it pops */
+            background: transparent;
+            border: none;            
+            box-shadow: none;        
+            text-shadow: 1px 1px 2px black; 
         }
         
         /* Hides the little triangle pointer that usually comes with tooltips */
@@ -67,14 +67,40 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <script>
-        // 1. Initialize the map
-        var map = L.map('map').setView([2.5, 103.0], 8);
-
-        // 2. Add the Esri Dark Gray Base Map
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+        // 1. Define the Base Map Layers
+        var darkNight = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri',
             maxZoom: 16
-        }).addTo(map);
+        });
+
+        var blueOcean = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 19
+        });
+
+        // Satellite requires a base image layer and an overlay layer for the city labels
+        var satImage = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri'
+        });
+        var satLabels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}');
+        var satelliteWithLabels = L.layerGroup([satImage, satLabels]);
+
+        // Grouping the maps for the control menu
+        var baseMaps = {
+            "Dark Night": darkNight,
+            "Blue Ocean": blueOcean,
+            "Satellite": satelliteWithLabels
+        };
+
+        // 2. Initialize the map with 'Dark Night' as the default layer
+        var map = L.map('map', {
+            center: [2.5, 103.0],
+            zoom: 8,
+            layers: [darkNight] 
+        });
+
+        // Add the Base Map toggle button to the top left
+        L.control.layers(baseMaps, null, {position: 'topleft'}).addTo(map);
 
         // 3. Function to determine color based on rainfall
         function getColor(d) {
@@ -92,6 +118,15 @@
                    d > 40 ? 15 :  
                    d > 20 ? 10 :  
                             5;    
+        }
+
+        // NEW: Function to translate exact numbers to legend ranges
+        function getRainfallRange(d) {
+            return d > 80 ? '81 - 100+ mm' :  
+                   d > 60 ? '61 - 80 mm' :  
+                   d > 40 ? '41 - 60 mm' :  
+                   d > 20 ? '21 - 40 mm' :  
+                            '0 - 20 mm';  
         }
 
         // 5. Add a legend to the map
@@ -140,6 +175,7 @@
                         if (row.Latitude && row.Longitude) {
                             var rainfall = row[date] || 0; 
                             var currentRadius = getRadius(rainfall);
+                            var rangeString = getRainfallRange(rainfall); // Get the text range
                             
                             var marker = L.circleMarker([row.Latitude, row.Longitude], {
                                 radius: currentRadius,
@@ -150,15 +186,15 @@
                                 fillOpacity: 0.8 
                             });
 
-                            // The popup that shows when you click the circle
-                            marker.bindPopup("<b>" + row['Station Name'] + "</b><br>Date: " + date + "<br>Rainfall: " + rainfall + " mm");
+                            // Updated Popup to show the Range String instead of exact numbers
+                            marker.bindPopup("<b>" + row['Station Name'] + "</b><br>Date: " + date + "<br>Rainfall: " + rangeString);
                             
-                            // NEW: The permanent label that stays on the map
+                            // The permanent label that stays on the map
                             marker.bindTooltip(row['Station Name'], {
                                 permanent: true, 
                                 direction: 'right', 
                                 className: 'station-label',
-                                offset: [currentRadius, 0] // Pushes the text to the right side of the circle
+                                offset: [currentRadius, 0] 
                             });
 
                             layerGroup.addLayer(marker);
@@ -168,7 +204,8 @@
                     dateLayers[date] = layerGroup;
                 });
 
-                L.control.layers(dateLayers, null, {collapsed: false}).addTo(map);
+                // Adds the date selector to the top right
+                L.control.layers(dateLayers, null, {collapsed: false, position: 'topright'}).addTo(map);
 
                 if (dateColumns.length > 0) {
                     dateLayers[dateColumns[0]].addTo(map);
