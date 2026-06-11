@@ -43,6 +43,35 @@
         .auth-box button { background: #3182bd; color: white; font-weight: bold; cursor: pointer; }
         .auth-box button:hover { background: #6baed6; }
         #auth-message { color: yellow; font-size: 12px; margin-top: 10px; }
+
+        /* NEW: Logged-in User Panel Styling */
+        #user-panel {
+            position: absolute;
+            top: 12px;
+            right: 60px; /* Offset to leave room for the Leaflet layer control */
+            z-index: 1000; /* Keeps it above the map */
+            background: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            display: none; /* Hidden until the user logs in */
+            align-items: center;
+            gap: 15px;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            color: #333;
+            font-weight: bold;
+        }
+        #btn-app-logout {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        #btn-app-logout:hover { background: #c0392b; }
     </style>
 </head>
 <body>
@@ -58,6 +87,11 @@
             
             <div id="auth-message"></div>
         </div>
+    </div>
+
+    <div id="user-panel">
+        <span id="user-email-display"></span>
+        <button id="btn-app-logout">Log Out</button>
     </div>
 
     <div id="map"></div>
@@ -88,19 +122,27 @@
         const btnRegister = document.getElementById('btnRegister');
         const authMessage = document.getElementById('auth-message');
         const authOverlay = document.getElementById('auth-overlay');
+        
+        // NEW: User Panel Elements
+        const userPanel = document.getElementById('user-panel');
+        const userEmailDisplay = document.getElementById('user-email-display');
+        const btnAppLogout = document.getElementById('btn-app-logout');
 
         // Monitor Login State
         auth.onAuthStateChanged(user => {
             if (user) {
                 if (user.emailVerified) {
-                    authOverlay.style.display = 'none';
-                    initializeMap(); // Load map ONLY after verification
+                    authOverlay.style.display = 'none'; // Hide login screen
+                    userPanel.style.display = 'flex';   // Show user panel
+                    userEmailDisplay.innerText = user.email; // Display their email
+                    initializeMap(); // Load map
                 } else {
                     authMessage.innerText = "Please check your email and verify your account before logging in.";
                     auth.signOut();
                 }
             } else {
-                authOverlay.style.display = 'flex';
+                authOverlay.style.display = 'flex'; // Show login screen
+                userPanel.style.display = 'none';   // Hide user panel
             }
         });
 
@@ -128,6 +170,16 @@
 
             auth.signInWithEmailAndPassword(email, password)
                 .catch(error => { authMessage.innerText = error.message; });
+        });
+
+        // NEW: Logout Click
+        btnAppLogout.addEventListener('click', () => {
+            auth.signOut().then(() => {
+                // Clear the input boxes for the next person
+                emailInput.value = '';
+                passInput.value = '';
+                authMessage.innerText = '';
+            });
         });
 
         // --- 3. LEAFLET MAP LOGIC ---
