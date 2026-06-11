@@ -44,11 +44,11 @@
         .auth-box button:hover { background: #6baed6; }
         #auth-message { color: yellow; font-size: 12px; margin-top: 10px; }
 
-        /* NEW: Logged-in User Panel Styling */
+        /* Logged-in User Panel Styling */
         #user-panel {
             position: absolute;
-            top: 12px;
-            right: 60px; /* Offset to leave room for the Leaflet layer control */
+            top: 10px;
+            right: 10px; /* Snug to the top right */
             z-index: 1000; /* Keeps it above the map */
             background: white;
             padding: 8px 15px;
@@ -72,6 +72,11 @@
             font-weight: bold;
         }
         #btn-app-logout:hover { background: #c0392b; }
+
+        /* NEW: Shift the Leaflet Date Layer Control down so it doesn't overlap the User Panel */
+        .leaflet-top.leaflet-right {
+            margin-top: 60px;
+        }
     </style>
 </head>
 <body>
@@ -123,7 +128,6 @@
         const authMessage = document.getElementById('auth-message');
         const authOverlay = document.getElementById('auth-overlay');
         
-        // NEW: User Panel Elements
         const userPanel = document.getElementById('user-panel');
         const userEmailDisplay = document.getElementById('user-email-display');
         const btnAppLogout = document.getElementById('btn-app-logout');
@@ -172,7 +176,7 @@
                 .catch(error => { authMessage.innerText = error.message; });
         });
 
-        // NEW: Logout Click
+        // Logout Click
         btnAppLogout.addEventListener('click', () => {
             auth.signOut().then(() => {
                 // Clear the input boxes for the next person
