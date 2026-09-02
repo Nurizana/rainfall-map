@@ -330,7 +330,7 @@
                             }
                         });
 
-                        // Create custom checkbox
+                        // Create custom checkbox - Removed "Date: " label prefix
                         var label = document.createElement('label');
                         label.className = 'layer-item';
                         var cb = document.createElement('input');
@@ -340,7 +340,7 @@
                             else { map.removeLayer(layerGroup); map.fire('overlayremove', {layer: layerGroup}); }
                         });
                         label.appendChild(cb);
-                        label.appendChild(document.createTextNode(" Date: " + date));
+                        label.appendChild(document.createTextNode(" " + date));
                         content1.appendChild(label);
                     });
                 }
@@ -368,7 +368,6 @@
                         },
                         onEachFeature: function(feature, layer) {
                             var val = getRainfallValue(feature.properties);
-                            // Fixed: Removed permanent:true to avoid tooltip map clutter
                             if (val > 0) {
                                 layer.bindTooltip(String(val) + " mm", { direction: "center", className: "contour-label" });
                             }
@@ -377,7 +376,7 @@
                     
                     layerGroup.groupType = 'mean'; 
                     
-                    // Create custom checkbox
+                    // Create custom checkbox - Removed "Mean Month: " label prefix
                     var label = document.createElement('label');
                     label.className = 'layer-item';
                     var cb = document.createElement('input');
@@ -387,7 +386,7 @@
                         else { map.removeLayer(layerGroup); map.fire('overlayremove', {layer: layerGroup}); }
                     });
                     label.appendChild(cb);
-                    label.appendChild(document.createTextNode(" Mean Month: " + month));
+                    label.appendChild(document.createTextNode(" " + month));
                     content2.appendChild(label);
                 });
             });
