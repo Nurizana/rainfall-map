@@ -11,6 +11,7 @@
         body { padding: 0; margin: 0; }
         html, body, #map { height: 100%; width: 100%; }
         
+        /* Map Legend Styling */
         .legend {
             background: white; padding: 15px; border-radius: 5px;
             box-shadow: 0 0 15px rgba(0,0,0,0.2); color: #333; font-family: Arial, sans-serif;
@@ -19,12 +20,14 @@
         .legend-circle-container { width: 60px; display: flex; justify-content: center; align-items: center; margin-right: 10px; }
         .legend-circle { border-radius: 50%; border: 1px solid #000; }
 
+        /* Station Labels */
         .station-label {
             color: yellow; font-weight: bold; font-size: 12px;
             background: transparent; border: none; box-shadow: none; text-shadow: 1px 1px 2px black; 
         }
         .leaflet-tooltip-left.station-label::before, .leaflet-tooltip-right.station-label::before { display: none; }
 
+        /* Security Overlay Styling */
         #auth-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #1e1e1e; z-index: 9999; display: flex; flex-direction: column;
@@ -41,6 +44,7 @@
         .auth-box button:hover { background: #6baed6; }
         #auth-message { color: yellow; font-size: 12px; margin-top: 10px; }
 
+        /* Logged-in User Panel Styling */
         #user-panel {
             position: absolute; top: 10px; right: 10px; z-index: 1000;
             background: white; padding: 8px 15px; border-radius: 20px;
@@ -51,7 +55,12 @@
             background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold;
         }
         #btn-app-logout:hover { background: #c0392b; }
+
+        /* Adjusting layer controls so they don't hide under user panel */
         .leaflet-top.leaflet-right { margin-top: 60px; }
+        
+        /* Optional: differentiate the two control boxes slightly */
+        .leaflet-control-layers { margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -75,7 +84,10 @@
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Include BOTH PapaParse for CSV and shpjs for Shapefiles -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://unpkg.com/shpjs@latest/dist/shp.js"></script>
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 
@@ -108,7 +120,7 @@
                 userEmailDisplay.innerText = user.email;
                 initializeMap();
             } else if (user) {
-                authMessage.innerText = "Please verify your account before logging in.";
+                authMessage.innerText = "Please check your email and verify your account before logging in.";
                 auth.signOut();
             } else {
                 authOverlay.style.display = 'flex';
@@ -147,8 +159,11 @@
 
             var darkNight = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri', maxZoom: 16 });
             var blueOcean = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors', maxZoom: 19 });
-            
-            var baseMaps = { "Dark Night": darkNight, "Blue Ocean": blueOcean };
+            var satImage = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri' });
+            var satLabels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}');
+            var satelliteWithLabels = L.layerGroup([satImage, satLabels]);
+
+            var baseMaps = { "Dark Night": darkNight, "Blue Ocean": blueOcean, "Satellite": satelliteWithLabels };
             var map = L.map('map', { center: [2.5, 103.0], zoom: 8, layers: [darkNight] });
             L.control.layers(baseMaps, null, {position: 'topleft'}).addTo(map);
 
@@ -174,38 +189,57 @@
             };
             legend.addTo(map);
 
-            // Updated Months array to map to the uploaded zip files
-            const months = ['JAN', 'FEB', 'MAC', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+            // CONTROL 1: CSV Daily Data (Original)
+            var csvLayerControl = L.control.layers(null, null, {collapsed: false, position: 'topright'}).addTo(map);
             
-            var monthLayerControl = L.control.layers(null, null, {collapsed: false, position: 'topright'}).addTo(map);
+            Papa.parse("data.csv", {
+                download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
+                error: function(err) { console.log("Could not load data.csv"); },
+                complete: function(results) {
+                    var data = results.data; 
+                    var dateColumns = Object.keys(data[0]).slice(4); 
+                    
+                    dateColumns.forEach(function(date) {
+                        var layerGroup = L.layerGroup();
+                        data.forEach(function(row) {
+                            if (row.Latitude && row.Longitude) {
+                                var rainfall = row[date] || 0; 
+                                var currentRadius = getRadius(rainfall);
+                                var marker = L.circleMarker([row.Latitude, row.Longitude], {
+                                    radius: currentRadius, fillColor: getColor(rainfall), color: "#000", weight: 1, opacity: 1, fillOpacity: 0.8 
+                                });
+                                marker.bindPopup("<b>" + row['Station Name'] + "</b><br>Date: " + date + "<br>Rainfall: " + getRainfallRange(rainfall));
+                                marker.bindTooltip(row['Station Name'], { permanent: true, direction: 'right', className: 'station-label', offset: [currentRadius, 0] });
+                                layerGroup.addLayer(marker);
+                            }
+                        });
+                        // Add to the CSV control box
+                        csvLayerControl.addOverlay(layerGroup, "Date: " + date);
+                        if (date === dateColumns[0]) { layerGroup.addTo(map); }
+                    });
+                }
+            });
 
-            months.forEach((month, index) => {
-                // Updated file path to target the 'shapefile' folder and appending '_2.zip'
+            // CONTROL 2: Shapefile Monthly Mean Data (New)
+            var shapefileLayerControl = L.control.layers(null, null, {collapsed: false, position: 'topright'}).addTo(map);
+            const months = ['JAN', 'FEB', 'MAC', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+            months.forEach((month) => {
                 shp(`shapefile/${month}_2.zip`).then(function(geojson) {
                     var layerGroup = L.geoJSON(geojson, {
-                        pointToLayer: function(feature, latlng) {
-                            // Ensure these properties match your DBF column headers
-                            var rainfall = feature.properties.Rainfall || feature.properties.RR || 0; 
-                            var currentRadius = getRadius(rainfall);
-                            return L.circleMarker(latlng, {
-                                radius: currentRadius, fillColor: getColor(rainfall), color: "#000", weight: 1, opacity: 1, fillOpacity: 0.8 
-                            }).bindPopup("<b>" + (feature.properties.Station_Name || "Station") + "</b><br>Month: " + month + "<br>Rainfall: " + getRainfallRange(rainfall));
-                        },
                         style: function(feature) {
+                            // NOTE: If polygons are showing up grey, it means "feature.properties.Rainfall" or "RR" is missing.
+                            // You may need to inspect your DBF to find the exact column name for the rainfall value.
                             var rainfall = feature.properties.Rainfall || feature.properties.RR || 0; 
                             return {
-                                fillColor: getColor(rainfall), weight: 1, color: '#333', fillOpacity: 0.7
+                                fillColor: getColor(rainfall), weight: 1, color: '#333', fillOpacity: 0.5
                             };
                         }
                     });
-
-                    monthLayerControl.addOverlay(layerGroup, month);
-                    
-                    if (index === 0) {
-                        layerGroup.addTo(map);
-                    }
+                    // Add to the Shapefile control box
+                    shapefileLayerControl.addOverlay(layerGroup, "Mean Month: " + month);
                 }).catch(function(err) {
-                    console.log(`Could not load shapefile/${month}_2.zip. Check file path.`, err);
+                    console.log(`Could not load shapefile/${month}_2.zip.`, err);
                 });
             });
         }
