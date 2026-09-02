@@ -39,7 +39,14 @@
         .accordion-content.show { display: block; }
         .layer-item { margin-bottom: 8px; display: flex; align-items: center; cursor: pointer; }
         .layer-item input { margin-right: 8px; cursor: pointer; }
-        .triangle { transition: transform 0.3s ease; font-size: 10px; }
+        
+        /* Updated Triangle: 3x bigger and thick red border */
+        .triangle { 
+            transition: transform 0.3s ease; 
+            font-size: 30px; 
+            -webkit-text-stroke: 2px red;
+            color: white; 
+        }
         .triangle.open { transform: rotate(180deg); }
 
         /* Labels */
@@ -215,26 +222,39 @@
             L.control.layers(baseMaps, null, {position: 'topleft'}).addTo(map);
 
             // --- RENDER LOGIC ---
-            function getColor(d) {
+            function getEventColor(d) {
                 return d >= 80 ? '#08519c' : d >= 60 ? '#3182bd' : d >= 40 ? '#6baed6' : d >= 20 ? '#bdd7e7' : '#eff3ff';   
             }
+            // Unique color logic based on ArcGIS Hujan_mm class values
+            function getPolygonColor(d) {
+                return d >= 450 ? '#cbc9e2' : // Purple
+                       d >= 400 ? '#c6dbef' : // Light Blue
+                       d >= 350 ? '#ffffcc' : // Yellow
+                       d >= 300 ? '#fcae91' : // Peach
+                       d >= 250 ? '#fcbba1' : // Orange
+                       d >= 200 ? '#f8aed4' : // Pink
+                       d >= 150 ? '#85e3a1' : // Green
+                                  '#eff3ff';  // Default
+            }
+
             function getRadius(d) {
                 return d >= 80 ? 25 : d >= 60 ? 20 : d >= 40 ? 15 : d >= 20 ? 10 : 5;    
             }
-            function getRainfallRange(d) {
+            function getEventRainfallRange(d) {
                 return d >= 80 ? '80+ mm' : d >= 60 ? '60 - 80 mm' : d >= 40 ? '40 - 60 mm' : d >= 20 ? '20 - 40 mm' : '0 - 20 mm';  
             }
 
-            // Fixed Data Extractor: Avoids grid codes by checking valid column names first
+            // Fixed Data Extractor: Specifically captures Hujan_mm for polygons
             function getRainfallValue(properties) {
                 if (!properties) return 0;
+                if (properties.Hujan_mm !== undefined) return parseFloat(properties.Hujan_mm);
                 if (properties.Rainfall !== undefined) return parseFloat(properties.Rainfall);
                 if (properties.contour !== undefined) return parseFloat(properties.contour);
                 if (properties.rr !== undefined) return parseFloat(properties.rr);
                 
                 for (let key in properties) {
                     let k = key.toLowerCase();
-                    if (k.includes('rain') || k.includes('precip')) {
+                    if (k.includes('rain') || k.includes('precip') || k.includes('hujan')) {
                         return parseFloat(properties[key]) || 0;
                     }
                 }
@@ -248,17 +268,21 @@
                 div.innerHTML = '<strong>Event Rainfall Amount</strong><br><br>';
                 for (var i = 0; i < grades.length; i++) {
                     var r = getRadius(grades[i]); var diameter = r * 2;
-                    div.innerHTML += '<div class="legend-item" style="min-height:50px;"><div class="legend-circle-container"><div class="legend-circle" style="background:' + getColor(grades[i]) + '; width:' + diameter + 'px; height:' + diameter + 'px;"></div></div><span>' + labels[i] + '</span></div>';
+                    div.innerHTML += '<div class="legend-item" style="min-height:50px;"><div class="legend-circle-container"><div class="legend-circle" style="background:' + getEventColor(grades[i]) + '; width:' + diameter + 'px; height:' + diameter + 'px;"></div></div><span>' + labels[i] + '</span></div>';
                 }
                 return div;
             };
 
             var meanLegend = L.control({position: 'bottomright'});
             meanLegend.onAdd = function (map) {
-                var div = L.DomUtil.create('div', 'info legend'), grades = [0, 20, 40, 60, 80], labels = ['0 - 20 mm', '20 - 40 mm', '40 - 60 mm', '60 - 80 mm', '80+ mm'];
-                div.innerHTML = '<strong>Mean Monthly Rainfall</strong><br><br>';
+                // Customized unique class values based on Hujan_mm dataset
+                var div = L.DomUtil.create('div', 'info legend'), 
+                    grades = [150, 200, 250, 300, 350, 400, 450], 
+                    labels = ['150', '200', '250', '300', '350', '400', '450'];
+                
+                div.innerHTML = '<strong>Mean Monthly Rainfall (mm)</strong><br><br>';
                 for (var i = 0; i < grades.length; i++) {
-                    div.innerHTML += '<div class="legend-item"><div style="background:' + getColor(grades[i]) + '; width:20px; height:20px; border:1px solid #333; margin-right:15px;"></div><span>' + labels[i] + '</span></div>';
+                    div.innerHTML += '<div class="legend-item"><div style="background:' + getPolygonColor(grades[i]) + '; width:20px; height:20px; border:1px solid #333; margin-right:15px;"></div><span>' + labels[i] + '</span></div>';
                 }
                 return div;
             };
@@ -322,15 +346,14 @@
                                 var rainfall = row[date] || 0; 
                                 var currentRadius = getRadius(rainfall);
                                 var marker = L.circleMarker([row.Latitude, row.Longitude], {
-                                    radius: currentRadius, fillColor: getColor(rainfall), color: "#000", weight: 1, opacity: 1, fillOpacity: 0.8 
+                                    radius: currentRadius, fillColor: getEventColor(rainfall), color: "#000", weight: 1, opacity: 1, fillOpacity: 0.8 
                                 });
-                                marker.bindPopup("<b>" + row['Station Name'] + "</b><br>Date: " + date + "<br>Rainfall: " + getRainfallRange(rainfall));
+                                marker.bindPopup("<b>" + row['Station Name'] + "</b><br>Date: " + date + "<br>Rainfall: " + getEventRainfallRange(rainfall));
                                 marker.bindTooltip(row['Station Name'], { permanent: true, direction: 'right', className: 'station-label', offset: [currentRadius, 0] });
                                 layerGroup.addLayer(marker);
                             }
                         });
 
-                        // Create custom checkbox - Removed "Date: " label prefix
                         var label = document.createElement('label');
                         label.className = 'layer-item';
                         var cb = document.createElement('input');
@@ -364,7 +387,8 @@
                     var layerGroup = L.geoJSON(geojson, {
                         style: function(feature) {
                             var rainfall = getRainfallValue(feature.properties);
-                            return { fillColor: getColor(rainfall), weight: 1.5, color: '#333', fillOpacity: 0.7 };
+                            // Uses the updated getPolygonColor function based on Hujan_mm
+                            return { fillColor: getPolygonColor(rainfall), weight: 1.5, color: '#333', fillOpacity: 0.7 };
                         },
                         onEachFeature: function(feature, layer) {
                             var val = getRainfallValue(feature.properties);
@@ -376,7 +400,6 @@
                     
                     layerGroup.groupType = 'mean'; 
                     
-                    // Create custom checkbox - Removed "Mean Month: " label prefix
                     var label = document.createElement('label');
                     label.className = 'layer-item';
                     var cb = document.createElement('input');
