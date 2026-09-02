@@ -16,16 +16,28 @@
             background: white; padding: 15px; border-radius: 5px;
             box-shadow: 0 0 15px rgba(0,0,0,0.2); color: #333; font-family: Arial, sans-serif;
         }
-        .legend-item { display: flex; align-items: center; margin-bottom: 5px; min-height: 50px; }
+        .legend-item { display: flex; align-items: center; margin-bottom: 5px; min-height: 30px; }
         .legend-circle-container { width: 60px; display: flex; justify-content: center; align-items: center; margin-right: 10px; }
         .legend-circle { border-radius: 50%; border: 1px solid #000; }
+        
+        /* Control Box Headers */
+        .control-header {
+            padding: 5px; font-weight: bold; background: #3182bd; color: white; 
+            text-align: center; border-radius: 3px; margin-bottom: 5px; font-family: Arial, sans-serif;
+        }
 
-        /* Station Labels */
+        /* Labels */
         .station-label {
             color: yellow; font-weight: bold; font-size: 12px;
             background: transparent; border: none; box-shadow: none; text-shadow: 1px 1px 2px black; 
         }
-        .leaflet-tooltip-left.station-label::before, .leaflet-tooltip-right.station-label::before { display: none; }
+        .contour-label {
+            color: #222; font-weight: bold; font-size: 11px;
+            background: transparent; border: none; box-shadow: none; text-shadow: 1px 1px 2px white; 
+        }
+        .leaflet-tooltip-left.station-label::before, .leaflet-tooltip-right.station-label::before,
+        .leaflet-tooltip-top.contour-label::before, .leaflet-tooltip-bottom.contour-label::before,
+        .leaflet-tooltip-center.contour-label::before { display: none; }
 
         /* Security Overlay Styling */
         #auth-overlay {
@@ -56,10 +68,7 @@
         }
         #btn-app-logout:hover { background: #c0392b; }
 
-        /* Adjusting layer controls so they don't hide under user panel */
         .leaflet-top.leaflet-right { margin-top: 60px; }
-        
-        /* Optional: differentiate the two control boxes slightly */
         .leaflet-control-layers { margin-bottom: 10px; }
     </style>
 </head>
@@ -84,10 +93,8 @@
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- Include BOTH PapaParse for CSV and shpjs for Shapefiles -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://unpkg.com/shpjs@latest/dist/shp.js"></script>
-
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 
@@ -159,11 +166,8 @@
 
             var darkNight = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri', maxZoom: 16 });
             var blueOcean = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors', maxZoom: 19 });
-            var satImage = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri' });
-            var satLabels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}');
-            var satelliteWithLabels = L.layerGroup([satImage, satLabels]);
-
-            var baseMaps = { "Dark Night": darkNight, "Blue Ocean": blueOcean, "Satellite": satelliteWithLabels };
+            
+            var baseMaps = { "Dark Night": darkNight, "Blue Ocean": blueOcean };
             var map = L.map('map', { center: [2.5, 103.0], zoom: 8, layers: [darkNight] });
             L.control.layers(baseMaps, null, {position: 'topleft'}).addTo(map);
 
@@ -177,30 +181,67 @@
                 return d > 80 ? '81 - 100+ mm' : d > 60 ? '61 - 80 mm' : d > 40 ? '41 - 60 mm' : d > 20 ? '21 - 40 mm' : '0 - 20 mm';  
             }
 
-            var legend = L.control({position: 'bottomright'});
-            legend.onAdd = function (map) {
+            // --- LEGENDS SETUP ---
+            var eventLegend = L.control({position: 'bottomright'});
+            eventLegend.onAdd = function (map) {
                 var div = L.DomUtil.create('div', 'info legend'), grades = [0, 21, 41, 61, 81], labels = ['0 - 20 mm', '21 - 40 mm', '41 - 60 mm', '61 - 80 mm', '81 - 100+ mm'];
-                div.innerHTML = '<strong>Rainfall Amount</strong><br><br>';
+                div.innerHTML = '<strong>Event Rainfall Amount</strong><br><br>';
                 for (var i = 0; i < grades.length; i++) {
                     var r = getRadius(grades[i]); var diameter = r * 2;
-                    div.innerHTML += '<div class="legend-item"><div class="legend-circle-container"><div class="legend-circle" style="background:' + getColor(grades[i]) + '; width:' + diameter + 'px; height:' + diameter + 'px;"></div></div><span>' + labels[i] + '</span></div>';
+                    div.innerHTML += '<div class="legend-item" style="min-height:50px;"><div class="legend-circle-container"><div class="legend-circle" style="background:' + getColor(grades[i]) + '; width:' + diameter + 'px; height:' + diameter + 'px;"></div></div><span>' + labels[i] + '</span></div>';
                 }
                 return div;
             };
-            legend.addTo(map);
 
-            // CONTROL 1: CSV Daily Data (Original)
+            var meanLegend = L.control({position: 'bottomright'});
+            meanLegend.onAdd = function (map) {
+                var div = L.DomUtil.create('div', 'info legend'), grades = [0, 21, 41, 61, 81], labels = ['0 - 20 mm', '21 - 40 mm', '41 - 60 mm', '61 - 80 mm', '81 - 100+ mm'];
+                div.innerHTML = '<strong>Mean Monthly Rainfall</strong><br><br>';
+                for (var i = 0; i < grades.length; i++) {
+                    div.innerHTML += '<div class="legend-item"><div style="background:' + getColor(grades[i]) + '; width:20px; height:20px; border:1px solid #333; margin-right:15px;"></div><span>' + labels[i] + '</span></div>';
+                }
+                return div;
+            };
+
+            // --- SYNC LEGENDS TO ACTIVE LAYERS ---
+            let activeEvents = 0;
+            let activeMeans = 0;
+
+            map.on('overlayadd', function(e) {
+                if (e.layer.groupType === 'event') activeEvents++;
+                if (e.layer.groupType === 'mean') activeMeans++;
+                toggleLegends();
+            });
+
+            map.on('overlayremove', function(e) {
+                if (e.layer.groupType === 'event') activeEvents--;
+                if (e.layer.groupType === 'mean') activeMeans--;
+                toggleLegends();
+            });
+
+            function toggleLegends() {
+                if (activeEvents > 0) { map.addControl(eventLegend); } else { map.removeControl(eventLegend); }
+                if (activeMeans > 0) { map.addControl(meanLegend); } else { map.removeControl(meanLegend); }
+            }
+
+            // --- GROUP 1: CSV Daily Data ---
             var csvLayerControl = L.control.layers(null, null, {collapsed: false, position: 'topright'}).addTo(map);
+            var csvContainer = csvLayerControl.getContainer();
+            var csvTitle = document.createElement('div');
+            csvTitle.className = "control-header";
+            csvTitle.innerHTML = "1) Rainfall Event";
+            csvContainer.insertBefore(csvTitle, csvContainer.firstChild);
             
             Papa.parse("data.csv", {
                 download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
-                error: function(err) { console.log("Could not load data.csv"); },
                 complete: function(results) {
                     var data = results.data; 
                     var dateColumns = Object.keys(data[0]).slice(4); 
                     
                     dateColumns.forEach(function(date) {
                         var layerGroup = L.layerGroup();
+                        layerGroup.groupType = 'event'; // Tag for legend syncing
+
                         data.forEach(function(row) {
                             if (row.Latitude && row.Longitude) {
                                 var rainfall = row[date] || 0; 
@@ -213,30 +254,40 @@
                                 layerGroup.addLayer(marker);
                             }
                         });
-                        // Add to the CSV control box
                         csvLayerControl.addOverlay(layerGroup, "Date: " + date);
-                        if (date === dateColumns[0]) { layerGroup.addTo(map); }
+                        // Optional: Un-comment the line below to auto-load the first date
+                        // if (date === dateColumns[0]) { layerGroup.addTo(map); } 
                     });
                 }
             });
 
-            // CONTROL 2: Shapefile Monthly Mean Data (New)
+            // --- GROUP 2: Shapefile Monthly Mean Data ---
             var shapefileLayerControl = L.control.layers(null, null, {collapsed: false, position: 'topright'}).addTo(map);
+            var shapeContainer = shapefileLayerControl.getContainer();
+            var shapeTitle = document.createElement('div');
+            shapeTitle.className = "control-header";
+            shapeTitle.innerHTML = "2) Mean Monthly Rainfall";
+            shapeContainer.insertBefore(shapeTitle, shapeContainer.firstChild);
+
             const months = ['JAN', 'FEB', 'MAC', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
             months.forEach((month) => {
                 shp(`shapefile/${month}_2.zip`).then(function(geojson) {
                     var layerGroup = L.geoJSON(geojson, {
                         style: function(feature) {
-                            // NOTE: If polygons are showing up grey, it means "feature.properties.Rainfall" or "RR" is missing.
-                            // You may need to inspect your DBF to find the exact column name for the rainfall value.
-                            var rainfall = feature.properties.Rainfall || feature.properties.RR || 0; 
-                            return {
-                                fillColor: getColor(rainfall), weight: 1, color: '#333', fillOpacity: 0.5
-                            };
+                            // UPDATE 'Contour' IF YOUR COLUMN NAME IS DIFFERENT (e.g. gridcode, Elev, etc.)
+                            var rainfall = feature.properties.Contour || feature.properties.Rainfall || feature.properties.RR || 0; 
+                            return { fillColor: getColor(rainfall), weight: 1.5, color: '#333', fillOpacity: 0.6 };
+                        },
+                        onEachFeature: function(feature, layer) {
+                            // UPDATE 'Contour' IF YOUR COLUMN NAME IS DIFFERENT
+                            var val = feature.properties.Contour || feature.properties.Rainfall || feature.properties.RR;
+                            if (val !== undefined && val !== null) {
+                                layer.bindTooltip(String(val) + " mm", { permanent: true, direction: "center", className: "contour-label" });
+                            }
                         }
                     });
-                    // Add to the Shapefile control box
+                    layerGroup.groupType = 'mean'; // Tag for legend syncing
                     shapefileLayerControl.addOverlay(layerGroup, "Mean Month: " + month);
                 }).catch(function(err) {
                     console.log(`Could not load shapefile/${month}_2.zip.`, err);
