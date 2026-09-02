@@ -13,10 +13,11 @@
         
         /* Map Legend Styling */
         .legend {
-            background: white; padding: 15px; border-radius: 5px;
+            background: white; padding: 10px 15px; border-radius: 5px;
             box-shadow: 0 0 15px rgba(0,0,0,0.2); color: #333; font-family: Arial, sans-serif;
+            max-height: 400px; overflow-y: auto;
         }
-        .legend-item { display: flex; align-items: center; margin-bottom: 5px; min-height: 30px; }
+        .legend-item { display: flex; align-items: center; margin-bottom: 4px; min-height: 25px; }
         .legend-circle-container { width: 60px; display: flex; justify-content: center; align-items: center; margin-right: 10px; }
         .legend-circle { border-radius: 50%; border: 1px solid #000; }
         
@@ -40,7 +41,7 @@
         .layer-item { margin-bottom: 8px; display: flex; align-items: center; cursor: pointer; }
         .layer-item input { margin-right: 8px; cursor: pointer; }
         
-        /* Updated Triangle: 3x bigger and thick red border */
+        /* Triangle Toggle Styling */
         .triangle { 
             transition: transform 0.3s ease; 
             font-size: 30px; 
@@ -180,7 +181,6 @@
             });
         });
 
-        // Global accordion toggle function
         window.toggleAccordion = function(contentId, iconId, headerElement) {
             var content = document.getElementById(contentId);
             var icon = document.getElementById(iconId);
@@ -225,16 +225,22 @@
             function getEventColor(d) {
                 return d >= 80 ? '#08519c' : d >= 60 ? '#3182bd' : d >= 40 ? '#6baed6' : d >= 20 ? '#bdd7e7' : '#eff3ff';   
             }
-            // Unique color logic based on ArcGIS Hujan_mm class values
+            
+            // Recreated ArcGIS Pro 12-class gradient (Yellow -> Green -> Blue)
             function getPolygonColor(d) {
-                return d >= 450 ? '#cbc9e2' : // Purple
-                       d >= 400 ? '#c6dbef' : // Light Blue
-                       d >= 350 ? '#ffffcc' : // Yellow
-                       d >= 300 ? '#fcae91' : // Peach
-                       d >= 250 ? '#fcbba1' : // Orange
-                       d >= 200 ? '#f8aed4' : // Pink
-                       d >= 150 ? '#85e3a1' : // Green
-                                  '#eff3ff';  // Default
+                return d >= 1000 ? '#081d58' : 
+                       d >= 500  ? '#225ea8' : 
+                       d >= 450  ? '#1d91c0' : 
+                       d >= 400  ? '#41b6c4' : 
+                       d >= 350  ? '#005a32' : 
+                       d >= 300  ? '#238b45' : 
+                       d >= 250  ? '#41ab5d' : 
+                       d >= 200  ? '#74c476' : 
+                       d >= 150  ? '#a1d99b' : 
+                       d >= 100  ? '#c7e9c0' : 
+                       d >= 50   ? '#edf8e9' : 
+                       d >= 30   ? '#ffffe5' : 
+                                   '#ffffff';
             }
 
             function getRadius(d) {
@@ -244,9 +250,10 @@
                 return d >= 80 ? '80+ mm' : d >= 60 ? '60 - 80 mm' : d >= 40 ? '40 - 60 mm' : d >= 20 ? '20 - 40 mm' : '0 - 20 mm';  
             }
 
-            // Fixed Data Extractor: Specifically captures Hujan_mm for polygons
+            // Checks Hujan, Hujan_mm, and other variants robustly
             function getRainfallValue(properties) {
                 if (!properties) return 0;
+                if (properties.Hujan !== undefined) return parseFloat(properties.Hujan);
                 if (properties.Hujan_mm !== undefined) return parseFloat(properties.Hujan_mm);
                 if (properties.Rainfall !== undefined) return parseFloat(properties.Rainfall);
                 if (properties.contour !== undefined) return parseFloat(properties.contour);
@@ -261,8 +268,8 @@
                 return 0; 
             }
 
-            // --- LEGENDS SETUP ---
-            var eventLegend = L.control({position: 'bottomright'});
+            // --- LEGENDS SETUP (Now positioned bottom-left) ---
+            var eventLegend = L.control({position: 'bottomleft'});
             eventLegend.onAdd = function (map) {
                 var div = L.DomUtil.create('div', 'info legend'), grades = [0, 20, 40, 60, 80], labels = ['0 - 20 mm', '20 - 40 mm', '40 - 60 mm', '60 - 80 mm', '80+ mm'];
                 div.innerHTML = '<strong>Event Rainfall Amount</strong><br><br>';
@@ -273,12 +280,11 @@
                 return div;
             };
 
-            var meanLegend = L.control({position: 'bottomright'});
+            var meanLegend = L.control({position: 'bottomleft'});
             meanLegend.onAdd = function (map) {
-                // Customized unique class values based on Hujan_mm dataset
                 var div = L.DomUtil.create('div', 'info legend'), 
-                    grades = [150, 200, 250, 300, 350, 400, 450], 
-                    labels = ['150', '200', '250', '300', '350', '400', '450'];
+                    grades = [30, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 1000], 
+                    labels = ['30', '50', '100', '150', '200', '250', '300', '350', '400', '450', '500', '1000'];
                 
                 div.innerHTML = '<strong>Mean Monthly Rainfall (mm)</strong><br><br>';
                 for (var i = 0; i < grades.length; i++) {
@@ -387,7 +393,6 @@
                     var layerGroup = L.geoJSON(geojson, {
                         style: function(feature) {
                             var rainfall = getRainfallValue(feature.properties);
-                            // Uses the updated getPolygonColor function based on Hujan_mm
                             return { fillColor: getPolygonColor(rainfall), weight: 1.5, color: '#333', fillOpacity: 0.7 };
                         },
                         onEachFeature: function(feature, layer) {
