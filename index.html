@@ -164,13 +164,32 @@
             if (isMapLoaded) return; 
             isMapLoaded = true;
 
-            var darkNight = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri', maxZoom: 16 });
+            // --- BASEMAP CONFIGURATION ---
+            
+            // 1. Dark Night (Base + Reference Labels)
+            var darkBase = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, attribution: 'Tiles &copy; Esri' });
+            var darkLabels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 });
+            var darkNightWithLabels = L.layerGroup([darkBase, darkLabels]);
+
+            // 2. Blue Ocean (OpenStreetMap already includes labels natively)
             var blueOcean = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors', maxZoom: 19 });
             
-            var baseMaps = { "Dark Night": darkNight, "Blue Ocean": blueOcean };
-            var map = L.map('map', { center: [2.5, 103.0], zoom: 8, layers: [darkNight] });
+            // 3. Satellite (Base Imagery + Reference Labels)
+            var satImage = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri' });
+            var satLabels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}');
+            var satelliteWithLabels = L.layerGroup([satImage, satLabels]);
+
+            // Add all three to the control map
+            var baseMaps = { 
+                "Dark Night": darkNightWithLabels, 
+                "Blue Ocean": blueOcean, 
+                "Satellite": satelliteWithLabels 
+            };
+            
+            var map = L.map('map', { center: [2.5, 103.0], zoom: 8, layers: [darkNightWithLabels] });
             L.control.layers(baseMaps, null, {position: 'topleft'}).addTo(map);
 
+            // --- RENDER LOGIC ---
             function getColor(d) {
                 return d > 80 ? '#08519c' : d > 60 ? '#3182bd' : d > 40 ? '#6baed6' : d > 20 ? '#bdd7e7' : '#eff3ff';   
             }
@@ -240,7 +259,7 @@
                     
                     dateColumns.forEach(function(date) {
                         var layerGroup = L.layerGroup();
-                        layerGroup.groupType = 'event'; // Tag for legend syncing
+                        layerGroup.groupType = 'event'; 
 
                         data.forEach(function(row) {
                             if (row.Latitude && row.Longitude) {
@@ -255,8 +274,6 @@
                             }
                         });
                         csvLayerControl.addOverlay(layerGroup, "Date: " + date);
-                        // Optional: Un-comment the line below to auto-load the first date
-                        // if (date === dateColumns[0]) { layerGroup.addTo(map); } 
                     });
                 }
             });
@@ -287,7 +304,7 @@
                             }
                         }
                     });
-                    layerGroup.groupType = 'mean'; // Tag for legend syncing
+                    layerGroup.groupType = 'mean'; 
                     shapefileLayerControl.addOverlay(layerGroup, "Mean Month: " + month);
                 }).catch(function(err) {
                     console.log(`Could not load shapefile/${month}_2.zip.`, err);
