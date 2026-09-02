@@ -165,21 +165,16 @@
             isMapLoaded = true;
 
             // --- BASEMAP CONFIGURATION ---
-            
-            // 1. Dark Night (Base + Reference Labels)
             var darkBase = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, attribution: 'Tiles &copy; Esri' });
             var darkLabels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 });
             var darkNightWithLabels = L.layerGroup([darkBase, darkLabels]);
 
-            // 2. Blue Ocean (OpenStreetMap already includes labels natively)
             var blueOcean = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors', maxZoom: 19 });
             
-            // 3. Satellite (Base Imagery + Reference Labels)
             var satImage = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri' });
             var satLabels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}');
             var satelliteWithLabels = L.layerGroup([satImage, satLabels]);
 
-            // Add all three to the control map
             var baseMaps = { 
                 "Dark Night": darkNightWithLabels, 
                 "Blue Ocean": blueOcean, 
@@ -189,7 +184,6 @@
             var map = L.map('map', { center: [2.5, 103.0], zoom: 8, layers: [darkNightWithLabels] });
             L.control.layers(baseMaps, null, {position: 'topleft'}).addTo(map);
 
-            // --- RENDER LOGIC ---
             function getColor(d) {
                 return d > 80 ? '#08519c' : d > 60 ? '#3182bd' : d > 40 ? '#6baed6' : d > 20 ? '#bdd7e7' : '#eff3ff';   
             }
@@ -222,7 +216,6 @@
                 return div;
             };
 
-            // --- SYNC LEGENDS TO ACTIVE LAYERS ---
             let activeEvents = 0;
             let activeMeans = 0;
 
@@ -278,7 +271,7 @@
                 }
             });
 
-            // --- GROUP 2: Shapefile Monthly Mean Data ---
+            // --- GROUP 2: Shapefile Monthly Mean Data (FIXED CHRONOLOGICAL SORTING) ---
             var shapefileLayerControl = L.control.layers(null, null, {collapsed: false, position: 'topright'}).addTo(map);
             var shapeContainer = shapefileLayerControl.getContainer();
             var shapeTitle = document.createElement('div');
@@ -288,26 +281,36 @@
 
             const months = ['JAN', 'FEB', 'MAC', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
-            months.forEach((month) => {
-                shp(`shapefile/${month}_2.zip`).then(function(geojson) {
+            // Fetch all shapefiles concurrently, but preserve their order in the array
+            const shapefilePromises = months.map(month => {
+                return shp(`shapefile/${month}_2.zip`).catch(err => {
+                    console.log(`Could not load shapefile/${month}_2.zip.`, err);
+                    return null; 
+                });
+            });
+
+            // Wait for all to finish, then add them to the map control in the correct order
+            Promise.all(shapefilePromises).then(results => {
+                results.forEach((geojson, index) => {
+                    if (!geojson) return; // Skip if file failed to load
+                    
+                    let month = months[index];
+                    
                     var layerGroup = L.geoJSON(geojson, {
                         style: function(feature) {
-                            // UPDATE 'Contour' IF YOUR COLUMN NAME IS DIFFERENT (e.g. gridcode, Elev, etc.)
                             var rainfall = feature.properties.Contour || feature.properties.Rainfall || feature.properties.RR || 0; 
                             return { fillColor: getColor(rainfall), weight: 1.5, color: '#333', fillOpacity: 0.6 };
                         },
                         onEachFeature: function(feature, layer) {
-                            // UPDATE 'Contour' IF YOUR COLUMN NAME IS DIFFERENT
                             var val = feature.properties.Contour || feature.properties.Rainfall || feature.properties.RR;
                             if (val !== undefined && val !== null) {
                                 layer.bindTooltip(String(val) + " mm", { permanent: true, direction: "center", className: "contour-label" });
                             }
                         }
                     });
+                    
                     layerGroup.groupType = 'mean'; 
                     shapefileLayerControl.addOverlay(layerGroup, "Mean Month: " + month);
-                }).catch(function(err) {
-                    console.log(`Could not load shapefile/${month}_2.zip.`, err);
                 });
             });
         }
