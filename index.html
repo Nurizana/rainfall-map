@@ -184,20 +184,33 @@
             var map = L.map('map', { center: [2.5, 103.0], zoom: 8, layers: [darkNightWithLabels] });
             L.control.layers(baseMaps, null, {position: 'topleft'}).addTo(map);
 
+            // --- RENDER LOGIC ---
             function getColor(d) {
-                return d > 80 ? '#08519c' : d > 60 ? '#3182bd' : d > 40 ? '#6baed6' : d > 20 ? '#bdd7e7' : '#eff3ff';   
+                return d >= 80 ? '#08519c' : d >= 60 ? '#3182bd' : d >= 40 ? '#6baed6' : d >= 20 ? '#bdd7e7' : '#eff3ff';   
             }
             function getRadius(d) {
-                return d > 80 ? 25 : d > 60 ? 20 : d > 40 ? 15 : d > 20 ? 10 : 5;    
+                return d >= 80 ? 25 : d >= 60 ? 20 : d >= 40 ? 15 : d >= 20 ? 10 : 5;    
             }
             function getRainfallRange(d) {
-                return d > 80 ? '81 - 100+ mm' : d > 60 ? '61 - 80 mm' : d > 40 ? '41 - 60 mm' : d > 20 ? '21 - 40 mm' : '0 - 20 mm';  
+                return d >= 80 ? '80+ mm' : d >= 60 ? '60 - 80 mm' : d >= 40 ? '40 - 60 mm' : d >= 20 ? '20 - 40 mm' : '0 - 20 mm';  
+            }
+
+            // Robust function to find the contour/rainfall value regardless of column name
+            function getRainfallValue(properties) {
+                if (!properties) return 0;
+                for (let key in properties) {
+                    let k = key.toLowerCase();
+                    if (k.includes('contour') || k.includes('rain') || k === 'rr' || k === 'value' || k === 'gridcode') {
+                        return parseFloat(properties[key]) || 0;
+                    }
+                }
+                return 0; 
             }
 
             // --- LEGENDS SETUP ---
             var eventLegend = L.control({position: 'bottomright'});
             eventLegend.onAdd = function (map) {
-                var div = L.DomUtil.create('div', 'info legend'), grades = [0, 21, 41, 61, 81], labels = ['0 - 20 mm', '21 - 40 mm', '41 - 60 mm', '61 - 80 mm', '81 - 100+ mm'];
+                var div = L.DomUtil.create('div', 'info legend'), grades = [0, 20, 40, 60, 80], labels = ['0 - 20 mm', '20 - 40 mm', '40 - 60 mm', '60 - 80 mm', '80+ mm'];
                 div.innerHTML = '<strong>Event Rainfall Amount</strong><br><br>';
                 for (var i = 0; i < grades.length; i++) {
                     var r = getRadius(grades[i]); var diameter = r * 2;
@@ -208,7 +221,7 @@
 
             var meanLegend = L.control({position: 'bottomright'});
             meanLegend.onAdd = function (map) {
-                var div = L.DomUtil.create('div', 'info legend'), grades = [0, 21, 41, 61, 81], labels = ['0 - 20 mm', '21 - 40 mm', '41 - 60 mm', '61 - 80 mm', '81 - 100+ mm'];
+                var div = L.DomUtil.create('div', 'info legend'), grades = [0, 20, 40, 60, 80], labels = ['0 - 20 mm', '20 - 40 mm', '40 - 60 mm', '60 - 80 mm', '80+ mm'];
                 div.innerHTML = '<strong>Mean Monthly Rainfall</strong><br><br>';
                 for (var i = 0; i < grades.length; i++) {
                     div.innerHTML += '<div class="legend-item"><div style="background:' + getColor(grades[i]) + '; width:20px; height:20px; border:1px solid #333; margin-right:15px;"></div><span>' + labels[i] + '</span></div>';
@@ -271,7 +284,7 @@
                 }
             });
 
-            // --- GROUP 2: Shapefile Monthly Mean Data (FIXED CHRONOLOGICAL SORTING) ---
+            // --- GROUP 2: Shapefile Monthly Mean Data ---
             var shapefileLayerControl = L.control.layers(null, null, {collapsed: false, position: 'topright'}).addTo(map);
             var shapeContainer = shapefileLayerControl.getContainer();
             var shapeTitle = document.createElement('div');
@@ -281,7 +294,6 @@
 
             const months = ['JAN', 'FEB', 'MAC', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
-            // Fetch all shapefiles concurrently, but preserve their order in the array
             const shapefilePromises = months.map(month => {
                 return shp(`shapefile/${month}_2.zip`).catch(err => {
                     console.log(`Could not load shapefile/${month}_2.zip.`, err);
@@ -289,21 +301,21 @@
                 });
             });
 
-            // Wait for all to finish, then add them to the map control in the correct order
             Promise.all(shapefilePromises).then(results => {
                 results.forEach((geojson, index) => {
-                    if (!geojson) return; // Skip if file failed to load
-                    
+                    if (!geojson) return; 
                     let month = months[index];
                     
                     var layerGroup = L.geoJSON(geojson, {
                         style: function(feature) {
-                            var rainfall = feature.properties.Contour || feature.properties.Rainfall || feature.properties.RR || 0; 
-                            return { fillColor: getColor(rainfall), weight: 1.5, color: '#333', fillOpacity: 0.6 };
+                            // Uses the robust finder to get the value
+                            var rainfall = getRainfallValue(feature.properties);
+                            return { fillColor: getColor(rainfall), weight: 1.5, color: '#333', fillOpacity: 0.7 };
                         },
                         onEachFeature: function(feature, layer) {
-                            var val = feature.properties.Contour || feature.properties.Rainfall || feature.properties.RR;
-                            if (val !== undefined && val !== null) {
+                            // Uses the robust finder for the label
+                            var val = getRainfallValue(feature.properties);
+                            if (val > 0) {
                                 layer.bindTooltip(String(val) + " mm", { permanent: true, direction: "center", className: "contour-label" });
                             }
                         }
