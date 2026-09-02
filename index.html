@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <style>
-        body { padding: 0; margin: 0; }
+        body { padding: 0; margin: 0; box-sizing: border-box; }
         html, body, #map { height: 100%; width: 100%; }
         
         /* Map Legend Styling */
@@ -20,11 +20,27 @@
         .legend-circle-container { width: 60px; display: flex; justify-content: center; align-items: center; margin-right: 10px; }
         .legend-circle { border-radius: 50%; border: 1px solid #000; }
         
-        /* Control Box Headers */
-        .control-header {
-            padding: 5px; font-weight: bold; background: #3182bd; color: white; 
-            text-align: center; border-radius: 3px; margin-bottom: 5px; font-family: Arial, sans-serif;
+        /* Custom Accordion Layer Control */
+        .custom-control-panel {
+            background: white; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            width: 240px; font-family: Arial, sans-serif; font-size: 13px;
         }
+        .accordion-header {
+            background: #3182bd; color: white; padding: 10px; cursor: pointer; font-weight: bold;
+            display: flex; justify-content: space-between; align-items: center; user-select: none;
+        }
+        .accordion-header:first-child { border-top-left-radius: 5px; border-top-right-radius: 5px; }
+        .accordion-header:last-of-type { border-bottom-left-radius: 5px; border-bottom-right-radius: 5px; }
+        .accordion-header.active:last-of-type { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+        .accordion-content {
+            display: none; padding: 10px; max-height: 250px; overflow-y: auto; background: white;
+            border-left: 1px solid #ccc; border-right: 1px solid #ccc; border-bottom: 1px solid #ccc;
+        }
+        .accordion-content.show { display: block; }
+        .layer-item { margin-bottom: 8px; display: flex; align-items: center; cursor: pointer; }
+        .layer-item input { margin-right: 8px; cursor: pointer; }
+        .triangle { transition: transform 0.3s ease; font-size: 10px; }
+        .triangle.open { transform: rotate(180deg); }
 
         /* Labels */
         .station-label {
@@ -69,7 +85,6 @@
         #btn-app-logout:hover { background: #c0392b; }
 
         .leaflet-top.leaflet-right { margin-top: 60px; }
-        .leaflet-control-layers { margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -158,6 +173,21 @@
             });
         });
 
+        // Global accordion toggle function
+        window.toggleAccordion = function(contentId, iconId, headerElement) {
+            var content = document.getElementById(contentId);
+            var icon = document.getElementById(iconId);
+            if (content.classList.contains('show')) {
+                content.classList.remove('show');
+                icon.classList.remove('open');
+                headerElement.classList.remove('active');
+            } else {
+                content.classList.add('show');
+                icon.classList.add('open');
+                headerElement.classList.add('active');
+            }
+        };
+
         let isMapLoaded = false;
 
         function initializeMap() {
@@ -195,12 +225,16 @@
                 return d >= 80 ? '80+ mm' : d >= 60 ? '60 - 80 mm' : d >= 40 ? '40 - 60 mm' : d >= 20 ? '20 - 40 mm' : '0 - 20 mm';  
             }
 
-            // Robust function to find the contour/rainfall value regardless of column name
+            // Fixed Data Extractor: Avoids grid codes by checking valid column names first
             function getRainfallValue(properties) {
                 if (!properties) return 0;
+                if (properties.Rainfall !== undefined) return parseFloat(properties.Rainfall);
+                if (properties.contour !== undefined) return parseFloat(properties.contour);
+                if (properties.rr !== undefined) return parseFloat(properties.rr);
+                
                 for (let key in properties) {
                     let k = key.toLowerCase();
-                    if (k.includes('contour') || k.includes('rain') || k === 'rr' || k === 'value' || k === 'gridcode') {
+                    if (k.includes('rain') || k.includes('precip')) {
                         return parseFloat(properties[key]) || 0;
                     }
                 }
@@ -249,19 +283,35 @@
                 if (activeMeans > 0) { map.addControl(meanLegend); } else { map.removeControl(meanLegend); }
             }
 
+            // --- CUSTOM ACCORDION CONTROL UI ---
+            var accordionControl = L.control({position: 'topright'});
+            accordionControl.onAdd = function (map) {
+                var div = L.DomUtil.create('div', 'custom-control-panel leaflet-control');
+                L.DomEvent.disableClickPropagation(div);
+                L.DomEvent.disableScrollPropagation(div);
+
+                div.innerHTML = `
+                    <div class="accordion-header active" onclick="window.toggleAccordion('content-1', 'icon-1', this)">
+                        <span>1) Rainfall Event</span><span id="icon-1" class="triangle open">▼</span>
+                    </div>
+                    <div id="content-1" class="accordion-content show"></div>
+
+                    <div class="accordion-header" style="border-top: 1px solid #fff;" onclick="window.toggleAccordion('content-2', 'icon-2', this)">
+                        <span>2) Mean Monthly Rainfall</span><span id="icon-2" class="triangle">▼</span>
+                    </div>
+                    <div id="content-2" class="accordion-content"></div>
+                `;
+                return div;
+            };
+            accordionControl.addTo(map);
+
             // --- GROUP 1: CSV Daily Data ---
-            var csvLayerControl = L.control.layers(null, null, {collapsed: false, position: 'topright'}).addTo(map);
-            var csvContainer = csvLayerControl.getContainer();
-            var csvTitle = document.createElement('div');
-            csvTitle.className = "control-header";
-            csvTitle.innerHTML = "1) Rainfall Event";
-            csvContainer.insertBefore(csvTitle, csvContainer.firstChild);
-            
             Papa.parse("data.csv", {
                 download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
                 complete: function(results) {
                     var data = results.data; 
                     var dateColumns = Object.keys(data[0]).slice(4); 
+                    var content1 = document.getElementById('content-1');
                     
                     dateColumns.forEach(function(date) {
                         var layerGroup = L.layerGroup();
@@ -279,24 +329,29 @@
                                 layerGroup.addLayer(marker);
                             }
                         });
-                        csvLayerControl.addOverlay(layerGroup, "Date: " + date);
+
+                        // Create custom checkbox
+                        var label = document.createElement('label');
+                        label.className = 'layer-item';
+                        var cb = document.createElement('input');
+                        cb.type = 'checkbox';
+                        cb.addEventListener('change', function() {
+                            if (this.checked) { map.addLayer(layerGroup); map.fire('overlayadd', {layer: layerGroup}); } 
+                            else { map.removeLayer(layerGroup); map.fire('overlayremove', {layer: layerGroup}); }
+                        });
+                        label.appendChild(cb);
+                        label.appendChild(document.createTextNode(" Date: " + date));
+                        content1.appendChild(label);
                     });
                 }
             });
 
             // --- GROUP 2: Shapefile Monthly Mean Data ---
-            var shapefileLayerControl = L.control.layers(null, null, {collapsed: false, position: 'topright'}).addTo(map);
-            var shapeContainer = shapefileLayerControl.getContainer();
-            var shapeTitle = document.createElement('div');
-            shapeTitle.className = "control-header";
-            shapeTitle.innerHTML = "2) Mean Monthly Rainfall";
-            shapeContainer.insertBefore(shapeTitle, shapeContainer.firstChild);
-
             const months = ['JAN', 'FEB', 'MAC', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+            var content2 = document.getElementById('content-2');
 
             const shapefilePromises = months.map(month => {
                 return shp(`shapefile/${month}_2.zip`).catch(err => {
-                    console.log(`Could not load shapefile/${month}_2.zip.`, err);
                     return null; 
                 });
             });
@@ -308,21 +363,32 @@
                     
                     var layerGroup = L.geoJSON(geojson, {
                         style: function(feature) {
-                            // Uses the robust finder to get the value
                             var rainfall = getRainfallValue(feature.properties);
                             return { fillColor: getColor(rainfall), weight: 1.5, color: '#333', fillOpacity: 0.7 };
                         },
                         onEachFeature: function(feature, layer) {
-                            // Uses the robust finder for the label
                             var val = getRainfallValue(feature.properties);
+                            // Fixed: Removed permanent:true to avoid tooltip map clutter
                             if (val > 0) {
-                                layer.bindTooltip(String(val) + " mm", { permanent: true, direction: "center", className: "contour-label" });
+                                layer.bindTooltip(String(val) + " mm", { direction: "center", className: "contour-label" });
                             }
                         }
                     });
                     
                     layerGroup.groupType = 'mean'; 
-                    shapefileLayerControl.addOverlay(layerGroup, "Mean Month: " + month);
+                    
+                    // Create custom checkbox
+                    var label = document.createElement('label');
+                    label.className = 'layer-item';
+                    var cb = document.createElement('input');
+                    cb.type = 'checkbox';
+                    cb.addEventListener('change', function() {
+                        if (this.checked) { map.addLayer(layerGroup); map.fire('overlayadd', {layer: layerGroup}); } 
+                        else { map.removeLayer(layerGroup); map.fire('overlayremove', {layer: layerGroup}); }
+                    });
+                    label.appendChild(cb);
+                    label.appendChild(document.createTextNode(" Mean Month: " + month));
+                    content2.appendChild(label);
                 });
             });
         }
