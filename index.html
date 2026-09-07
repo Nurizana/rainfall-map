@@ -8,8 +8,27 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <style>
-        body { padding: 0; margin: 0; box-sizing: border-box; }
+        body { 
+            padding: 0; 
+            margin: 0; 
+            box-sizing: border-box; 
+            /* Disable text selection */
+            -webkit-user-select: none; 
+            -ms-user-select: none; 
+            user-select: none; 
+        }
         html, body, #map { height: 100%; width: 100%; }
+        
+        /* Block printing and Save as PDF */
+        @media print {
+            body { display: none !important; }
+        }
+
+        /* Blur the screen if the window loses focus (deters snipping tools) */
+        body.blurred {
+            filter: blur(10px);
+            pointer-events: none;
+        }
         
         /* Map Legend Styling */
         .legend {
@@ -144,6 +163,31 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 
     <script>
+        // --- SECURITY IMPLEMENTATIONS ---
+        
+        // 1. Disable Right-Click (Context Menu)
+        document.addEventListener('contextmenu', event => event.preventDefault());
+
+        // 2. Disable Keyboard Shortcuts (F12, Ctrl+U, Ctrl+Shift+I/J/C)
+        document.addEventListener('keydown', function(e) {
+            if (e.keyCode === 123 || // F12
+               (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) || // Ctrl+Shift+I/J/C
+               (e.ctrlKey && e.keyCode === 85)) { // Ctrl+U
+                e.preventDefault();
+                return false;
+            }
+        });
+
+        // 3. Blur map when browser loses focus to deter screenshot tools
+        window.addEventListener('blur', function() {
+            document.body.classList.add('blurred');
+        });
+        window.addEventListener('focus', function() {
+            document.body.classList.remove('blurred');
+        });
+
+        // --- FIREBASE & APP LOGIC ---
+
         var firebaseConfig = {
           apiKey: "AIzaSyAcGx3t733bHUh-k3VFgMdcWuRMY9LERC8",
           authDomain: "rainfall-map-f20f5.firebaseapp.com",
@@ -478,14 +522,12 @@
                     var yearGroups = {};
 
                     data.forEach(function(row) {
-                        // Extracting variables using EXACT column headers from your CSV
                         let stnNum = row['STATION NUMBER'];
                         let stnName = row['STATION NAME'];
                         let lat = parseFloat(row['LAT (DECIMAL DEGREES)']);
                         let lon = parseFloat(row['LONG (DECIMAL DEGREES)']);
                         let year = row['STATION START YEAR'];
                         
-                        // Validate data before grouping
                         if (!isNaN(lat) && !isNaN(lon) && year) {
                             let yearStr = String(year).trim();
                             if (!yearGroups[yearStr]) yearGroups[yearStr] = [];
@@ -496,7 +538,6 @@
                     var content3 = document.getElementById('content-3');
                     content3.innerHTML = ''; 
                     
-                    // Create layer groups and checkboxes sorted by year
                     Object.keys(yearGroups).sort().forEach(year => {
                         var layerGroup = L.layerGroup();
                         layerGroup.groupType = 'station';
@@ -506,8 +547,6 @@
                                 radius: 7, fillColor: '#ff7800', color: "#000", weight: 1, opacity: 1, fillOpacity: 0.8 
                             });
                             marker.bindPopup("<b>" + stn.stnName + "</b><br>Station Number: " + stn.stnNum + "<br>Started: " + year);
-                            
-                            // ADDED THIS LINE: Bind a permanent tooltip to show Station Number and Name instantly
                             marker.bindTooltip(stn.stnNum + " - " + stn.stnName, { permanent: true, direction: 'right', className: 'station-label', offset: [7, 0] });
                             
                             layerGroup.addLayer(marker);
