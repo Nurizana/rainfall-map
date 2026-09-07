@@ -143,7 +143,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://unpkg.com/shpjs@latest/dist/shp.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- XLSX library removed as we are now using the CSV format for Group 3 -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 
@@ -387,6 +387,7 @@
             };
             accordionControl.addTo(map);
 
+            // --- GROUP 1: Event Rainfall Data ---
             Papa.parse("data.csv", {
                 download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
                 complete: function(results) {
@@ -426,6 +427,7 @@
                 }
             });
 
+            // --- GROUP 2: Mean Monthly Rainfall Shapefiles ---
             const months = ['JAN', 'FEB', 'MAC', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
             var content2 = document.getElementById('content-2');
 
@@ -467,49 +469,38 @@
                 });
             });
 
-            // --- GROUP 3: Excel Station Data via Relative Path ---
-            // Using a relative path fixes CORS issues on GitHub pages.
-            const excelUrl = "station%20list/MASTER%20LIST_Stesen%20Meteorologi%2004072025.xlsx";
+            // --- GROUP 3: CSV Station Data via Relative Path ---
+            const stationCsvUrl = "station%20list/Stesen%20Utama_start_year_list.csv";
             
-            fetch(excelUrl)
-                .then(res => {
-                    if (!res.ok) throw new Error("File not found or network error");
-                    return res.arrayBuffer();
-                })
-                .then(ab => {
-                    const workbook = XLSX.read(ab, { type: 'array' });
-                    const sheetName = "Stesen Utama";
-                    if (!workbook.Sheets[sheetName]) return; 
-                    
-                    // The { raw: false } ensures dates are kept strictly as strings (e.g. "01/Jan/1979")
-                    // and not converted into Excel numeric serial date codes, fixing regex failures.
-                    const rawData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, raw: false });
-                    let yearGroups = {};
+            Papa.parse(stationCsvUrl, {
+                download: true,
+                header: true,
+                dynamicTyping: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    var data = results.data;
+                    var yearGroups = {};
 
-                    // Data starts at row index 2 (ignoring the merged top headers)
-                    for (let i = 2; i < rawData.length; i++) {
-                        let row = rawData[i];
-                        if (!row || row.length < 10) continue; 
+                    data.forEach(function(row) {
+                        // Extracting variables using EXACT column headers from your CSV
+                        let stnNum = row['STATION NUMBER'];
+                        let stnName = row['STATION NAME'];
+                        let lat = parseFloat(row['LAT (DECIMAL DEGREES)']);
+                        let lon = parseFloat(row['LONG (DECIMAL DEGREES)']);
+                        let year = row['STATION START YEAR'];
                         
-                        let stnNum = row[2];                 // Column C 
-                        let stnName = row[4] || row[3];      // Column E (Fallback to D if missing)
-                        let lat = parseFloat(row[9]);        // Column J
-                        let lon = parseFloat(row[10]);       // Column K
-                        let startDate = String(row[15] || ""); // Column P
-                        
-                        if (!isNaN(lat) && !isNaN(lon) && startDate) {
-                            let yearMatch = startDate.match(/\b(19\d{2}|20\d{2})\b/);
-                            if (yearMatch) {
-                                let year = yearMatch[0];
-                                if (!yearGroups[year]) yearGroups[year] = [];
-                                yearGroups[year].push({ stnNum, stnName, lat, lon });
-                            }
+                        // Validate data before grouping
+                        if (!isNaN(lat) && !isNaN(lon) && year) {
+                            let yearStr = String(year).trim();
+                            if (!yearGroups[yearStr]) yearGroups[yearStr] = [];
+                            yearGroups[yearStr].push({ stnNum, stnName, lat, lon });
                         }
-                    }
+                    });
 
                     var content3 = document.getElementById('content-3');
                     content3.innerHTML = ''; 
                     
+                    // Create layer groups and checkboxes sorted by year
                     Object.keys(yearGroups).sort().forEach(year => {
                         var layerGroup = L.layerGroup();
                         layerGroup.groupType = 'station';
@@ -534,7 +525,11 @@
                         label.appendChild(document.createTextNode(" " + year));
                         content3.appendChild(label);
                     });
-                }).catch(err => console.error("Error loading Excel file:", err));
+                },
+                error: function(err) {
+                    console.error("Error loading station CSV file:", err);
+                }
+            });
         }
     </script>
 </body>
