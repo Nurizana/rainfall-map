@@ -92,11 +92,25 @@
         }
         #btn-app-logout:hover { background: #c0392b; }
 
+        /* Idle Timeout Overlay Styling */
+        #timeout-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85); z-index: 10000; display: none; flex-direction: column;
+            justify-content: center; align-items: center; color: white; font-family: Arial, sans-serif;
+        }
+        .timeout-box {
+            background: #e74c3c; padding: 30px; border-radius: 8px;
+            text-align: center; max-width: 400px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        .timeout-box h2 { margin-top: 0; }
+        #countdown-timer { font-size: 48px; font-weight: bold; margin: 20px 0; color: yellow; }
+
         .leaflet-top.leaflet-right { margin-top: 60px; }
     </style>
 </head>
 <body>
 
+    <!-- Authentication Overlay -->
     <div id="auth-overlay">
         <div class="auth-box">
             <h2>Authorized Access</h2>
@@ -108,6 +122,17 @@
         </div>
     </div>
 
+    <!-- Timeout Warning Overlay -->
+    <div id="timeout-overlay">
+        <div class="timeout-box">
+            <h2>Session Expiring Soon</h2>
+            <p>You have been inactive. You will be automatically logged out in:</p>
+            <div id="countdown-timer">15</div>
+            <p>Move your mouse or press any key to stay logged in.</p>
+        </div>
+    </div>
+
+    <!-- User Control Panel -->
     <div id="user-panel">
         <span id="user-email-display"></span>
         <button id="btn-app-logout">Log Out</button>
@@ -143,18 +168,77 @@
         const userEmailDisplay = document.getElementById('user-email-display');
         const btnAppLogout = document.getElementById('btn-app-logout');
 
+        // --- IDLE TIMEOUT LOGIC ---
+        let idleTimer;
+        let countdownInterval;
+        const IDLE_TIME = 30000; // 30 seconds of inactivity
+        const COUNTDOWN_TIME = 15; // 15 seconds warning
+        let secondsLeft = COUNTDOWN_TIME;
+        const timeoutOverlay = document.getElementById('timeout-overlay');
+        const countdownDisplay = document.getElementById('countdown-timer');
+
+        function startIdleTimer() {
+            clearTimers();
+            // Start the 30-second countdown to warning
+            idleTimer = setTimeout(showWarning, IDLE_TIME);
+        }
+
+        function showWarning() {
+            secondsLeft = COUNTDOWN_TIME;
+            countdownDisplay.innerText = secondsLeft;
+            timeoutOverlay.style.display = 'flex';
+            
+            // Start the 15-second visual countdown
+            countdownInterval = setInterval(() => {
+                secondsLeft--;
+                countdownDisplay.innerText = secondsLeft;
+                
+                if (secondsLeft <= 0) {
+                    clearTimers();
+                    // Perform Logout
+                    auth.signOut().then(() => {
+                        timeoutOverlay.style.display = 'none';
+                        authMessage.innerText = "You were logged out due to inactivity.";
+                    });
+                }
+            }, 1000);
+        }
+
+        function clearTimers() {
+            clearTimeout(idleTimer);
+            clearInterval(countdownInterval);
+            timeoutOverlay.style.display = 'none';
+        }
+
+        // Reset timer on any activity
+        function resetTimer() {
+            // Only reset if a user is currently logged in
+            if (auth.currentUser) {
+                startIdleTimer();
+            }
+        }
+
+        // Listen for user interactions to reset the timer
+        ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'].forEach(evt => {
+            document.addEventListener(evt, resetTimer, true);
+        });
+        // --- END IDLE TIMEOUT LOGIC ---
+
         auth.onAuthStateChanged(user => {
             if (user && user.emailVerified) {
                 authOverlay.style.display = 'none';
                 userPanel.style.display = 'flex';   
                 userEmailDisplay.innerText = user.email;
                 initializeMap();
+                startIdleTimer(); // Start tracking idle time upon successful login
             } else if (user) {
                 authMessage.innerText = "Please check your email and verify your account before logging in.";
                 auth.signOut();
+                clearTimers();
             } else {
                 authOverlay.style.display = 'flex';
                 userPanel.style.display = 'none';   
+                clearTimers(); // Stop tracking if logged out
             }
         });
 
@@ -177,7 +261,7 @@
 
         btnAppLogout.addEventListener('click', () => {
             auth.signOut().then(() => {
-                emailInput.value = ''; passInput.value = ''; authMessage.innerText = '';
+                emailInput.value = ''; passInput.value = ''; authMessage.innerText = 'You have logged out successfully.';
             });
         });
 
@@ -226,7 +310,6 @@
                 return d >= 80 ? '#08519c' : d >= 60 ? '#3182bd' : d >= 40 ? '#6baed6' : d >= 20 ? '#bdd7e7' : '#eff3ff';   
             }
             
-            // Recreated ArcGIS Pro 12-class gradient (Yellow -> Green -> Blue)
             function getPolygonColor(d) {
                 return d >= 1000 ? '#081d58' : 
                        d >= 500  ? '#225ea8' : 
@@ -250,7 +333,6 @@
                 return d >= 80 ? '80+ mm' : d >= 60 ? '60 - 80 mm' : d >= 40 ? '40 - 60 mm' : d >= 20 ? '20 - 40 mm' : '0 - 20 mm';  
             }
 
-            // Checks Hujan, Hujan_mm, and other variants robustly
             function getRainfallValue(properties) {
                 if (!properties) return 0;
                 if (properties.Hujan !== undefined) return parseFloat(properties.Hujan);
@@ -268,7 +350,7 @@
                 return 0; 
             }
 
-            // --- LEGENDS SETUP (Now positioned bottom-left) ---
+            // --- LEGENDS SETUP ---
             var eventLegend = L.control({position: 'bottomleft'});
             eventLegend.onAdd = function (map) {
                 var div = L.DomUtil.create('div', 'info legend'), grades = [0, 20, 40, 60, 80], labels = ['0 - 20 mm', '20 - 40 mm', '40 - 60 mm', '60 - 80 mm', '80+ mm'];
