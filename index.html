@@ -110,7 +110,6 @@
 </head>
 <body>
 
-    <!-- Authentication Overlay -->
     <div id="auth-overlay">
         <div class="auth-box">
             <h2>Authorized Access</h2>
@@ -122,7 +121,6 @@
         </div>
     </div>
 
-    <!-- Timeout Warning Overlay -->
     <div id="timeout-overlay">
         <div class="timeout-box">
             <h2>Session Expiring Soon</h2>
@@ -132,7 +130,6 @@
         </div>
     </div>
 
-    <!-- User Control Panel -->
     <div id="user-panel">
         <span id="user-email-display"></span>
         <button id="btn-app-logout">Log Out</button>
@@ -143,7 +140,6 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://unpkg.com/shpjs@latest/dist/shp.js"></script>
-    <!-- XLSX library removed as we are now using the CSV format for Group 3 -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 
@@ -510,6 +506,10 @@
                                 radius: 7, fillColor: '#ff7800', color: "#000", weight: 1, opacity: 1, fillOpacity: 0.8 
                             });
                             marker.bindPopup("<b>" + stn.stnName + "</b><br>Station Number: " + stn.stnNum + "<br>Started: " + year);
+                            
+                            // ADDED THIS LINE: Bind a permanent tooltip to show Station Number and Name instantly
+                            marker.bindTooltip(stn.stnNum + " - " + stn.stnName, { permanent: true, direction: 'right', className: 'station-label', offset: [7, 0] });
+                            
                             layerGroup.addLayer(marker);
                         });
 
