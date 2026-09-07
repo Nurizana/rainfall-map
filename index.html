@@ -509,7 +509,7 @@
             });
 
             // --- GROUP 3: CSV Station Data FIX ---
-            const stationCsvUrl = "station list/Stesen Utama_start_year_list.csv"; 
+            const stationCsvUrl = "station list/Start Year Principal Station - Principal Station.csv"; 
             
             Papa.parse(stationCsvUrl, {
                 download: true,
@@ -527,8 +527,8 @@
                     data.forEach(function(row) {
                         let stnNum = row['STATION NUMBER'];
                         let stnName = row['STATION NAME'];
-                        let lat = parseFloat(row['LAT (DECIMAL DEGREES)']);
-                        let lon = parseFloat(row['LONG (DECIMAL DEGREES)']);
+                        let lat = parseFloat(row['LAT']);
+                        let lon = parseFloat(row['LONG']);
                         let year = row['STATION START YEAR'];
                         
                         if (!isNaN(lat) && !isNaN(lon) && year != null) {
