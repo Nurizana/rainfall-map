@@ -143,7 +143,6 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://unpkg.com/shpjs@latest/dist/shp.js"></script>
-    <!-- SheetJS for reading Excel files -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -218,7 +217,6 @@
         ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'].forEach(evt => {
             document.addEventListener(evt, resetTimer, true);
         });
-        // --- END IDLE TIMEOUT LOGIC ---
 
         auth.onAuthStateChanged(user => {
             if (user && user.emailVerified) {
@@ -281,13 +279,11 @@
             if (isMapLoaded) return; 
             isMapLoaded = true;
 
-            // --- BASEMAP CONFIGURATION ---
             var darkBase = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, attribution: 'Tiles &copy; Esri' });
             var darkLabels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 });
             var darkNightWithLabels = L.layerGroup([darkBase, darkLabels]);
 
             var blueOcean = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors', maxZoom: 19 });
-            
             var satImage = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri' });
             var satLabels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}');
             var satelliteWithLabels = L.layerGroup([satImage, satLabels]);
@@ -301,33 +297,14 @@
             var map = L.map('map', { center: [2.5, 103.0], zoom: 8, layers: [darkNightWithLabels] });
             L.control.layers(baseMaps, null, {position: 'topleft'}).addTo(map);
 
-            // --- RENDER LOGIC ---
-            function getEventColor(d) {
-                return d >= 80 ? '#08519c' : d >= 60 ? '#3182bd' : d >= 40 ? '#6baed6' : d >= 20 ? '#bdd7e7' : '#eff3ff';   
-            }
-            
+            function getEventColor(d) { return d >= 80 ? '#08519c' : d >= 60 ? '#3182bd' : d >= 40 ? '#6baed6' : d >= 20 ? '#bdd7e7' : '#eff3ff'; }
             function getPolygonColor(d) {
-                return d >= 1000 ? '#081d58' : 
-                       d >= 500  ? '#225ea8' : 
-                       d >= 450  ? '#1d91c0' : 
-                       d >= 400  ? '#41b6c4' : 
-                       d >= 350  ? '#005a32' : 
-                       d >= 300  ? '#238b45' : 
-                       d >= 250  ? '#41ab5d' : 
-                       d >= 200  ? '#74c476' : 
-                       d >= 150  ? '#a1d99b' : 
-                       d >= 100  ? '#c7e9c0' : 
-                       d >= 50   ? '#edf8e9' : 
-                       d >= 30   ? '#ffffe5' : 
-                                   '#ffffff';
+                return d >= 1000 ? '#081d58' : d >= 500  ? '#225ea8' : d >= 450  ? '#1d91c0' : d >= 400  ? '#41b6c4' : 
+                       d >= 350  ? '#005a32' : d >= 300  ? '#238b45' : d >= 250  ? '#41ab5d' : d >= 200  ? '#74c476' : 
+                       d >= 150  ? '#a1d99b' : d >= 100  ? '#c7e9c0' : d >= 50   ? '#edf8e9' : d >= 30   ? '#ffffe5' : '#ffffff';
             }
-
-            function getRadius(d) {
-                return d >= 80 ? 25 : d >= 60 ? 20 : d >= 40 ? 15 : d >= 20 ? 10 : 5;    
-            }
-            function getEventRainfallRange(d) {
-                return d >= 80 ? '80+ mm' : d >= 60 ? '60 - 80 mm' : d >= 40 ? '40 - 60 mm' : d >= 20 ? '20 - 40 mm' : '0 - 20 mm';  
-            }
+            function getRadius(d) { return d >= 80 ? 25 : d >= 60 ? 20 : d >= 40 ? 15 : d >= 20 ? 10 : 5; }
+            function getEventRainfallRange(d) { return d >= 80 ? '80+ mm' : d >= 60 ? '60 - 80 mm' : d >= 40 ? '40 - 60 mm' : d >= 20 ? '20 - 40 mm' : '0 - 20 mm'; }
 
             function getRainfallValue(properties) {
                 if (!properties) return 0;
@@ -336,17 +313,13 @@
                 if (properties.Rainfall !== undefined) return parseFloat(properties.Rainfall);
                 if (properties.contour !== undefined) return parseFloat(properties.contour);
                 if (properties.rr !== undefined) return parseFloat(properties.rr);
-                
                 for (let key in properties) {
                     let k = key.toLowerCase();
-                    if (k.includes('rain') || k.includes('precip') || k.includes('hujan')) {
-                        return parseFloat(properties[key]) || 0;
-                    }
+                    if (k.includes('rain') || k.includes('precip') || k.includes('hujan')) return parseFloat(properties[key]) || 0;
                 }
                 return 0; 
             }
 
-            // --- LEGENDS SETUP ---
             var eventLegend = L.control({position: 'bottomleft'});
             eventLegend.onAdd = function (map) {
                 var div = L.DomUtil.create('div', 'info legend'), grades = [0, 20, 40, 60, 80], labels = ['0 - 20 mm', '20 - 40 mm', '40 - 60 mm', '60 - 80 mm', '80+ mm'];
@@ -360,13 +333,10 @@
 
             var meanLegend = L.control({position: 'bottomleft'});
             meanLegend.onAdd = function (map) {
-                var div = L.DomUtil.create('div', 'info legend'), 
-                    grades = [30, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 1000], 
-                    labels = ['30', '50', '100', '150', '200', '250', '300', '350', '400', '450', '500', '1000'];
-                
+                var div = L.DomUtil.create('div', 'info legend'), grades = [30, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 1000];
                 div.innerHTML = '<strong>Mean Monthly Rainfall (mm)</strong><br><br>';
                 for (var i = 0; i < grades.length; i++) {
-                    div.innerHTML += '<div class="legend-item"><div style="background:' + getPolygonColor(grades[i]) + '; width:20px; height:20px; border:1px solid #333; margin-right:15px;"></div><span>' + labels[i] + '</span></div>';
+                    div.innerHTML += '<div class="legend-item"><div style="background:' + getPolygonColor(grades[i]) + '; width:20px; height:20px; border:1px solid #333; margin-right:15px;"></div><span>' + grades[i] + '</span></div>';
                 }
                 return div;
             };
@@ -391,7 +361,6 @@
                 if (activeMeans > 0) { map.addControl(meanLegend); } else { map.removeControl(meanLegend); }
             }
 
-            // --- CUSTOM ACCORDION CONTROL UI ---
             var accordionControl = L.control({position: 'topright'});
             accordionControl.onAdd = function (map) {
                 var div = L.DomUtil.create('div', 'custom-control-panel leaflet-control');
@@ -409,7 +378,6 @@
                     </div>
                     <div id="content-2" class="accordion-content"></div>
 
-                    <!-- NEW SECTION: Station Start Years -->
                     <div class="accordion-header" style="border-top: 1px solid #fff;" onclick="window.toggleAccordion('content-3', 'icon-3', this)">
                         <span>3) Station start years</span><span id="icon-3" class="triangle">▼</span>
                     </div>
@@ -419,7 +387,6 @@
             };
             accordionControl.addTo(map);
 
-            // --- GROUP 1: CSV Daily Data ---
             Papa.parse("data.csv", {
                 download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
                 complete: function(results) {
@@ -459,7 +426,6 @@
                 }
             });
 
-            // --- GROUP 2: Shapefile Monthly Mean Data ---
             const months = ['JAN', 'FEB', 'MAC', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
             var content2 = document.getElementById('content-2');
 
@@ -501,32 +467,37 @@
                 });
             });
 
-            // --- GROUP 3: Excel Station Data via GitHub Raw URL ---
-            const excelUrl = "https://raw.githubusercontent.com/Nurizana/rainfall-map/main/station%20list/MASTER%20LIST_Stesen%20Meteorologi%2004072025.xlsx";
+            // --- GROUP 3: Excel Station Data via Relative Path ---
+            // Using a relative path fixes CORS issues on GitHub pages.
+            const excelUrl = "station%20list/MASTER%20LIST_Stesen%20Meteorologi%2004072025.xlsx";
             
             fetch(excelUrl)
-                .then(res => res.arrayBuffer())
+                .then(res => {
+                    if (!res.ok) throw new Error("File not found or network error");
+                    return res.arrayBuffer();
+                })
                 .then(ab => {
                     const workbook = XLSX.read(ab, { type: 'array' });
                     const sheetName = "Stesen Utama";
-                    if (!workbook.Sheets[sheetName]) return; // Failsafe if sheet doesn't exist
+                    if (!workbook.Sheets[sheetName]) return; 
                     
-                    const rawData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 });
+                    // The { raw: false } ensures dates are kept strictly as strings (e.g. "01/Jan/1979")
+                    // and not converted into Excel numeric serial date codes, fixing regex failures.
+                    const rawData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, raw: false });
                     let yearGroups = {};
 
-                    // Loop skipping headers (Assuming headers run through index 0 and 1)
+                    // Data starts at row index 2 (ignoring the merged top headers)
                     for (let i = 2; i < rawData.length; i++) {
                         let row = rawData[i];
-                        if (!row || row.length < 16) continue;
+                        if (!row || row.length < 10) continue; 
                         
-                        let stnNum = row[2];  // Column C (Index 2)
-                        let stnName = row[4]; // Column E (Index 4)
-                        let lat = row[9];     // Column J (Index 9)
-                        let lon = row[10];    // Column K (Index 10)
-                        let startDate = String(row[15] || ""); // Column P (Index 15)
+                        let stnNum = row[2];                 // Column C 
+                        let stnName = row[4] || row[3];      // Column E (Fallback to D if missing)
+                        let lat = parseFloat(row[9]);        // Column J
+                        let lon = parseFloat(row[10]);       // Column K
+                        let startDate = String(row[15] || ""); // Column P
                         
-                        if (lat && lon && startDate) {
-                            // Extract just the 4 digit year from the string
+                        if (!isNaN(lat) && !isNaN(lon) && startDate) {
                             let yearMatch = startDate.match(/\b(19\d{2}|20\d{2})\b/);
                             if (yearMatch) {
                                 let year = yearMatch[0];
@@ -537,8 +508,8 @@
                     }
 
                     var content3 = document.getElementById('content-3');
+                    content3.innerHTML = ''; 
                     
-                    // Sort years ascending and create UI
                     Object.keys(yearGroups).sort().forEach(year => {
                         var layerGroup = L.layerGroup();
                         layerGroup.groupType = 'station';
