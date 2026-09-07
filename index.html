@@ -12,19 +12,19 @@
             padding: 0; 
             margin: 0; 
             box-sizing: border-box; 
-            /* Disable text selection */
+            /* Security: Disable text selection */
             -webkit-user-select: none; 
             -ms-user-select: none; 
             user-select: none; 
         }
         html, body, #map { height: 100%; width: 100%; }
         
-        /* Block printing and Save as PDF */
+        /* Security: Block printing and Save as PDF */
         @media print {
             body { display: none !important; }
         }
 
-        /* Blur the screen if the window loses focus (deters snipping tools) */
+        /* Security: Blur the screen if the window loses focus */
         body.blurred {
             filter: blur(10px);
             pointer-events: none;
@@ -165,10 +165,10 @@
     <script>
         // --- SECURITY IMPLEMENTATIONS ---
         
-        // 1. Disable Right-Click (Context Menu)
+        // Disable Right-Click (Context Menu)
         document.addEventListener('contextmenu', event => event.preventDefault());
 
-        // 2. Disable Keyboard Shortcuts (F12, Ctrl+U, Ctrl+Shift+I/J/C)
+        // Disable Keyboard Shortcuts (F12, Ctrl+U, Ctrl+Shift+I/J/C)
         document.addEventListener('keydown', function(e) {
             if (e.keyCode === 123 || // F12
                (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) || // Ctrl+Shift+I/J/C
@@ -178,7 +178,7 @@
             }
         });
 
-        // 3. Blur map when browser loses focus to deter screenshot tools
+        // Blur map when browser loses focus to deter screenshot tools
         window.addEventListener('blur', function() {
             document.body.classList.add('blurred');
         });
@@ -186,8 +186,7 @@
             document.body.classList.remove('blurred');
         });
 
-        // --- FIREBASE & APP LOGIC ---
-
+        // --- FIREBASE CONFIGURATION ---
         var firebaseConfig = {
           apiKey: "AIzaSyAcGx3t733bHUh-k3VFgMdcWuRMY9LERC8",
           authDomain: "rainfall-map-f20f5.firebaseapp.com",
@@ -509,14 +508,18 @@
                 });
             });
 
-            // --- GROUP 3: CSV Station Data via Relative Path ---
-            const stationCsvUrl = "station%20list/Stesen%20Utama_start_year_list.csv";
+            // --- GROUP 3: CSV Station Data FIX ---
+            const stationCsvUrl = "station list/Stesen Utama_start_year_list.csv"; 
             
             Papa.parse(stationCsvUrl, {
                 download: true,
                 header: true,
                 dynamicTyping: true,
                 skipEmptyLines: true,
+                // Sanitize CSV headers to fix parsing issues
+                transformHeader: function(header) {
+                    return header.trim();
+                },
                 complete: function(results) {
                     var data = results.data;
                     var yearGroups = {};
@@ -528,7 +531,7 @@
                         let lon = parseFloat(row['LONG (DECIMAL DEGREES)']);
                         let year = row['STATION START YEAR'];
                         
-                        if (!isNaN(lat) && !isNaN(lon) && year) {
+                        if (!isNaN(lat) && !isNaN(lon) && year != null) {
                             let yearStr = String(year).trim();
                             if (!yearGroups[yearStr]) yearGroups[yearStr] = [];
                             yearGroups[yearStr].push({ stnNum, stnName, lat, lon });
