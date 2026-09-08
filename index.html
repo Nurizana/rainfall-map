@@ -125,6 +125,15 @@
         #countdown-timer { font-size: 48px; font-weight: bold; margin: 20px 0; color: yellow; }
 
         .leaflet-top.leaflet-right { margin-top: 60px; }
+        
+        /* Animation Controls */
+        .btn-animate {
+            width: 100%; padding: 8px; background: #e74c3c; color: white; border: none; 
+            border-radius: 4px; font-weight: bold; cursor: pointer; margin-bottom: 5px;
+        }
+        .btn-animate:hover { background: #c0392b; }
+        .btn-animate-stop { background: #7f8c8d; }
+        .btn-animate-stop:hover { background: #95a5a6; }
     </style>
 </head>
 <body>
@@ -164,27 +173,19 @@
 
     <script>
         // --- SECURITY IMPLEMENTATIONS ---
-        
-        // Disable Right-Click (Context Menu)
         document.addEventListener('contextmenu', event => event.preventDefault());
 
-        // Disable Keyboard Shortcuts (F12, Ctrl+U, Ctrl+Shift+I/J/C)
         document.addEventListener('keydown', function(e) {
-            if (e.keyCode === 123 || // F12
-               (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) || // Ctrl+Shift+I/J/C
-               (e.ctrlKey && e.keyCode === 85)) { // Ctrl+U
+            if (e.keyCode === 123 || 
+               (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) || 
+               (e.ctrlKey && e.keyCode === 85)) { 
                 e.preventDefault();
                 return false;
             }
         });
 
-        // Blur map when browser loses focus to deter screenshot tools
-        window.addEventListener('blur', function() {
-            document.body.classList.add('blurred');
-        });
-        window.addEventListener('focus', function() {
-            document.body.classList.remove('blurred');
-        });
+        window.addEventListener('blur', function() { document.body.classList.add('blurred'); });
+        window.addEventListener('focus', function() { document.body.classList.remove('blurred'); });
 
         // --- FIREBASE CONFIGURATION ---
         var firebaseConfig = {
@@ -248,9 +249,7 @@
         }
 
         function resetTimer() {
-            if (auth.currentUser) {
-                startIdleTimer();
-            }
+            if (auth.currentUser) { startIdleTimer(); }
         }
 
         ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'].forEach(evt => {
@@ -421,6 +420,15 @@
                         <span>3) Station start years</span><span id="icon-3" class="triangle">▼</span>
                     </div>
                     <div id="content-3" class="accordion-content"></div>
+
+                    <div class="accordion-header" style="border-top: 1px solid #fff;" onclick="window.toggleAccordion('content-4', 'icon-4', this)">
+                        <span>4) Animate Stations</span><span id="icon-4" class="triangle">▼</span>
+                    </div>
+                    <div id="content-4" class="accordion-content">
+                        <button id="btnPlayAnim" class="btn-animate">Play Animation</button>
+                        <button id="btnStopAnim" class="btn-animate btn-animate-stop" style="display:none;">Stop / Clear</button>
+                        <div id="anim-year-display" style="text-align:center; font-weight:bold; font-size:18px; margin-top:10px; color:#3182bd;">Year: -</div>
+                    </div>
                 `;
                 return div;
             };
@@ -508,7 +516,7 @@
                 });
             });
 
-            // --- GROUP 3: CSV Station Data FIX ---
+            // --- GROUP 3 & 4: CSV Station Data + Animation FIX ---
             const stationCsvUrl = "station list/Start Year Principal Station - Principal Station.csv"; 
             
             Papa.parse(stationCsvUrl, {
@@ -516,10 +524,7 @@
                 header: true,
                 dynamicTyping: true,
                 skipEmptyLines: true,
-                // Sanitize CSV headers to fix parsing issues
-                transformHeader: function(header) {
-                    return header.trim();
-                },
+                transformHeader: function(header) { return header.trim(); },
                 complete: function(results) {
                     var data = results.data;
                     var yearGroups = {};
@@ -566,6 +571,70 @@
                         label.appendChild(cb);
                         label.appendChild(document.createTextNode(" " + year));
                         content3.appendChild(label);
+                    });
+
+                    // --- ANIMATION LOGIC (GROUP 4) ---
+                    const btnPlay = document.getElementById('btnPlayAnim');
+                    const btnStop = document.getElementById('btnStopAnim');
+                    const yearDisplay = document.getElementById('anim-year-display');
+                    let sortedYears = Object.keys(yearGroups).sort();
+                    let animationInterval;
+                    let currentYearIndex = 0;
+                    let activeAnimatedLayers = [];
+
+                    function clearAnimationLayers() {
+                        activeAnimatedLayers.forEach(layer => map.removeLayer(layer));
+                        activeAnimatedLayers = [];
+                    }
+
+                    btnPlay.addEventListener('click', function() {
+                        // Reset & Uncheck manual boxes to prevent visual overlap
+                        clearInterval(animationInterval);
+                        clearAnimationLayers();
+                        currentYearIndex = 0;
+                        document.querySelectorAll('#content-3 input[type="checkbox"]').forEach(cb => {
+                            if(cb.checked) cb.click();
+                        });
+
+                        btnPlay.style.display = 'none';
+                        btnStop.style.display = 'block';
+                        
+                        animationInterval = setInterval(() => {
+                            if (currentYearIndex >= sortedYears.length) {
+                                clearInterval(animationInterval);
+                                btnPlay.style.display = 'block';
+                                btnStop.style.display = 'none';
+                                btnPlay.innerText = "Restart Animation";
+                                return;
+                            }
+                            
+                            let yr = sortedYears[currentYearIndex];
+                            yearDisplay.innerText = "Year: " + yr;
+                            
+                            var animLayerGroup = L.layerGroup();
+                            yearGroups[yr].forEach(stn => {
+                                var marker = L.circleMarker([stn.lat, stn.lon], {
+                                    radius: 7, fillColor: '#ff7800', color: "#000", weight: 1, opacity: 1, fillOpacity: 0.8 
+                                });
+                                marker.bindPopup("<b>" + stn.stnName + "</b><br>Started: " + yr);
+                                marker.bindTooltip(stn.stnName, { permanent: true, direction: 'right', className: 'station-label', offset: [7, 0] });
+                                animLayerGroup.addLayer(marker);
+                            });
+                            
+                            map.addLayer(animLayerGroup);
+                            activeAnimatedLayers.push(animLayerGroup);
+                            
+                            currentYearIndex++;
+                        }, 800); // Renders next year every 0.8 seconds
+                    });
+
+                    btnStop.addEventListener('click', function() {
+                        clearInterval(animationInterval);
+                        clearAnimationLayers();
+                        yearDisplay.innerText = "Year: -";
+                        btnPlay.style.display = 'block';
+                        btnStop.style.display = 'none';
+                        btnPlay.innerText = "Play Animation";
                     });
                 },
                 error: function(err) {
