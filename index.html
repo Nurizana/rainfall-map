@@ -82,22 +82,39 @@
         .leaflet-tooltip-top.contour-label::before, .leaflet-tooltip-bottom.contour-label::before,
         .leaflet-tooltip-center.contour-label::before { display: none; }
 
-        /* Security Overlay Styling */
+        /* Security Overlay Styling - UPDATED WITH GIS BACKGROUND */
         #auth-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #1e1e1e; z-index: 9999; display: flex; flex-direction: column;
+            /* A dark gradient overlay placed over a high-resolution map/GIS image */
+            background: linear-gradient(rgba(20, 25, 35, 0.8), rgba(20, 25, 35, 0.8)), url('https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=1920&q=80') center center / cover no-repeat;
+            z-index: 9999; display: flex; flex-direction: column;
             justify-content: center; align-items: center; color: white; font-family: Arial, sans-serif;
         }
         .auth-box {
-            background: #333; padding: 30px; border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5); text-align: center; width: 300px;
+            background: rgba(40, 44, 52, 0.95); /* Slightly transparent box to blend with background */
+            padding: 35px; border-radius: 10px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.7); text-align: center; width: 320px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .auth-box h2 {
+            margin-top: 0; margin-bottom: 25px;
+            font-size: 22px; letter-spacing: 1px;
         }
         .auth-box input, .auth-box button {
-            width: 90%; padding: 10px; margin: 10px 0; border-radius: 4px; border: none; box-sizing: border-box;
+            width: 100%; padding: 12px; margin: 8px 0; border-radius: 5px; border: none; box-sizing: border-box;
         }
-        .auth-box button { background: #3182bd; color: white; font-weight: bold; cursor: pointer; }
+        .auth-box input {
+            background: #1e1e1e;
+            color: #fff;
+            border: 1px solid #444;
+        }
+        .auth-box input:focus {
+            outline: none;
+            border-color: #3182bd;
+        }
+        .auth-box button { background: #3182bd; color: white; font-weight: bold; cursor: pointer; transition: background 0.3s; }
         .auth-box button:hover { background: #6baed6; }
-        #auth-message { color: yellow; font-size: 12px; margin-top: 10px; }
+        #auth-message { color: #f1c40f; font-size: 13px; margin-top: 15px; font-weight: bold; }
 
         /* Logged-in User Panel Styling */
         #user-panel {
