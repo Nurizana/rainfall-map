@@ -229,7 +229,8 @@
         mapImages.forEach(src => {
             const slide = document.createElement('div');
             slide.className = 'bg-slide';
-            slide.style.backgroundImage = `url('${src}')`;
+            // encodeURI handles files with spaces in their names perfectly
+            slide.style.backgroundImage = `url('${encodeURI(src)}')`;
             sliderElement.appendChild(slide);
         });
 
