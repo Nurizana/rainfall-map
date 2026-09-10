@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Rainfall Map - Secure Access</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -63,8 +63,7 @@
         /* Triangle Toggle Styling */
         .triangle { 
             transition: transform 0.3s ease; 
-            font-size: 30px; 
-            -webkit-text-stroke: 2px red;
+            font-size: 16px; 
             color: white; 
         }
         .triangle.open { transform: rotate(180deg); }
@@ -82,18 +81,20 @@
         .leaflet-tooltip-top.contour-label::before, .leaflet-tooltip-bottom.contour-label::before,
         .leaflet-tooltip-center.contour-label::before { display: none; }
 
-        /* Security Overlay Styling - UPDATED WITH GIS BACKGROUND */
+        /* Security Overlay Styling */
         #auth-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            /* A dark gradient overlay placed over a high-resolution map/GIS image */
-            background: linear-gradient(rgba(20, 25, 35, 0.8), rgba(20, 25, 35, 0.8)), url('https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=1920&q=80') center center / cover no-repeat;
             z-index: 9999; display: flex; flex-direction: column;
             justify-content: center; align-items: center; color: white; font-family: Arial, sans-serif;
+            background-color: #141923; /* Fallback color */
+            transition: background-image 0.2s ease-in-out; /* Slight smoothing for dynamic image changes */
         }
         .auth-box {
-            background: rgba(40, 44, 52, 0.95); /* Slightly transparent box to blend with background */
+            background: rgba(40, 44, 52, 0.95);
             padding: 35px; border-radius: 10px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.7); text-align: center; width: 320px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.7); text-align: center; 
+            width: 90%; /* Mobile Responsive */
+            max-width: 350px; 
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .auth-box h2 {
@@ -136,7 +137,7 @@
         }
         .timeout-box {
             background: #e74c3c; padding: 30px; border-radius: 8px;
-            text-align: center; max-width: 400px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            text-align: center; width: 90%; max-width: 400px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         }
         .timeout-box h2 { margin-top: 0; }
         #countdown-timer { font-size: 48px; font-weight: bold; margin: 20px 0; color: yellow; }
@@ -151,13 +152,22 @@
         .btn-animate:hover { background: #c0392b; }
         .btn-animate-stop { background: #7f8c8d; }
         .btn-animate-stop:hover { background: #95a5a6; }
+
+        /* Mobile Breakpoints */
+        @media (max-width: 600px) {
+            .custom-control-panel { width: 200px; font-size: 12px; }
+            .legend { font-size: 11px; max-height: 200px; padding: 8px; }
+            .auth-box { padding: 25px; }
+            .auth-box h2 { font-size: 18px; }
+            #user-panel { flex-direction: column; top: auto; bottom: 20px; right: 50%; transform: translateX(50%); border-radius: 10px; gap: 5px; }
+        }
     </style>
 </head>
 <body>
 
     <div id="auth-overlay">
         <div class="auth-box">
-            <h2>Authorized Access</h2>
+            <h2>Analisa Ramalan Jangka Panjang</h2>
             <input type="email" id="email" placeholder="Enter your email" required>
             <input type="password" id="password" placeholder="Enter your password" required>
             <button id="btnLogin">Sign In</button>
@@ -189,6 +199,26 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 
     <script>
+        // --- DYNAMIC BACKGROUND IMAGES (1 Second Sequence) ---
+        const mapImages = [
+            'url("https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=1920&q=80")',
+            'url("https://images.unsplash.com/photo-1584972208009-41b12b596205?auto=format&fit=crop&w=1920&q=80")',
+            'url("https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1920&q=80")',
+            'url("https://images.unsplash.com/photo-1526778548025-fa2fbfb25f19?auto=format&fit=crop&w=1920&q=80")',
+            'url("https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&w=1920&q=80")'
+        ];
+        let currentImageIndex = 0;
+        const authOverlayElement = document.getElementById('auth-overlay');
+        
+        function changeBackground() {
+            authOverlayElement.style.background = `linear-gradient(rgba(20, 25, 35, 0.8), rgba(20, 25, 35, 0.8)), ${mapImages[currentImageIndex]} center center / cover no-repeat`;
+            currentImageIndex = (currentImageIndex + 1) % mapImages.length;
+        }
+        
+        // Initialize first background and start rotation
+        changeBackground();
+        setInterval(changeBackground, 1000);
+
         // --- SECURITY IMPLEMENTATIONS ---
         document.addEventListener('contextmenu', event => event.preventDefault());
 
@@ -605,7 +635,6 @@
                     }
 
                     btnPlay.addEventListener('click', function() {
-                        // Reset & Uncheck manual boxes to prevent visual overlap
                         clearInterval(animationInterval);
                         clearAnimationLayers();
                         currentYearIndex = 0;
@@ -642,7 +671,7 @@
                             activeAnimatedLayers.push(animLayerGroup);
                             
                             currentYearIndex++;
-                        }, 800); // Renders next year every 0.8 seconds
+                        }, 800); 
                     });
 
                     btnStop.addEventListener('click', function() {
