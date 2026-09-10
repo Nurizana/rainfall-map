@@ -12,25 +12,21 @@
             padding: 0; 
             margin: 0; 
             box-sizing: border-box; 
-            /* Security: Disable text selection */
             -webkit-user-select: none; 
             -ms-user-select: none; 
             user-select: none; 
         }
         html, body, #map { height: 100%; width: 100%; }
         
-        /* Security: Block printing and Save as PDF */
         @media print {
             body { display: none !important; }
         }
 
-        /* Security: Blur the screen if the window loses focus */
         body.blurred {
             filter: blur(10px);
             pointer-events: none;
         }
         
-        /* Map Legend Styling */
         .legend {
             background: white; padding: 10px 15px; border-radius: 5px;
             box-shadow: 0 0 15px rgba(0,0,0,0.2); color: #333; font-family: Arial, sans-serif;
@@ -40,7 +36,6 @@
         .legend-circle-container { width: 60px; display: flex; justify-content: center; align-items: center; margin-right: 10px; }
         .legend-circle { border-radius: 50%; border: 1px solid #000; }
         
-        /* Custom Accordion Layer Control */
         .custom-control-panel {
             background: white; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.3);
             width: 240px; font-family: Arial, sans-serif; font-size: 13px;
@@ -60,7 +55,6 @@
         .layer-item { margin-bottom: 8px; display: flex; align-items: center; cursor: pointer; }
         .layer-item input { margin-right: 8px; cursor: pointer; }
         
-        /* Triangle Toggle Styling */
         .triangle { 
             transition: transform 0.3s ease; 
             font-size: 16px; 
@@ -68,7 +62,6 @@
         }
         .triangle.open { transform: rotate(180deg); }
 
-        /* Labels */
         .station-label {
             color: yellow; font-weight: bold; font-size: 12px;
             background: transparent; border: none; box-shadow: none; text-shadow: 1px 1px 2px black; 
@@ -81,21 +74,43 @@
         .leaflet-tooltip-top.contour-label::before, .leaflet-tooltip-bottom.contour-label::before,
         .leaflet-tooltip-center.contour-label::before { display: none; }
 
-        /* Security Overlay Styling */
+        /* Security Overlay Styling - Updated for Swipe Effect */
         #auth-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 9999; display: flex; flex-direction: column;
             justify-content: center; align-items: center; color: white; font-family: Arial, sans-serif;
-            background-color: #141923; /* Fallback color */
-            transition: background-image 0.2s ease-in-out; /* Slight smoothing for dynamic image changes */
+            background-color: #141923;
+            overflow: hidden; /* Hides elements outside the screen during swipe */
         }
+        
+        /* New slider containers for background */
+        #bg-slider {
+            position: absolute; top: 0; left: 0; 
+            width: 500%; /* 5 images = 500% width */ 
+            height: 100%;
+            display: flex;
+            transition: transform 1s ease-in-out;
+            z-index: 1;
+        }
+        .bg-slide {
+            width: 20%; /* 100% / 5 images */
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+        }
+        .bg-overlay-gradient {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(20, 25, 35, 0.8), rgba(20, 25, 35, 0.8));
+            z-index: 2;
+        }
+
         .auth-box {
             background: rgba(40, 44, 52, 0.95);
             padding: 35px; border-radius: 10px;
             box-shadow: 0 8px 30px rgba(0,0,0,0.7); text-align: center; 
-            width: 90%; /* Mobile Responsive */
-            max-width: 350px; 
+            width: 90%; max-width: 350px; 
             border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 3; /* Keep above the background */
         }
         .auth-box h2 {
             margin-top: 0; margin-bottom: 25px;
@@ -117,7 +132,6 @@
         .auth-box button:hover { background: #6baed6; }
         #auth-message { color: #f1c40f; font-size: 13px; margin-top: 15px; font-weight: bold; }
 
-        /* Logged-in User Panel Styling */
         #user-panel {
             position: absolute; top: 10px; right: 10px; z-index: 1000;
             background: white; padding: 8px 15px; border-radius: 20px;
@@ -129,7 +143,6 @@
         }
         #btn-app-logout:hover { background: #c0392b; }
 
-        /* Idle Timeout Overlay Styling */
         #timeout-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.85); z-index: 10000; display: none; flex-direction: column;
@@ -144,7 +157,6 @@
 
         .leaflet-top.leaflet-right { margin-top: 60px; }
         
-        /* Animation Controls */
         .btn-animate {
             width: 100%; padding: 8px; background: #e74c3c; color: white; border: none; 
             border-radius: 4px; font-weight: bold; cursor: pointer; margin-bottom: 5px;
@@ -153,7 +165,6 @@
         .btn-animate-stop { background: #7f8c8d; }
         .btn-animate-stop:hover { background: #95a5a6; }
 
-        /* Mobile Breakpoints */
         @media (max-width: 600px) {
             .custom-control-panel { width: 200px; font-size: 12px; }
             .legend { font-size: 11px; max-height: 200px; padding: 8px; }
@@ -166,6 +177,10 @@
 <body>
 
     <div id="auth-overlay">
+        <!-- New Background Slider -->
+        <div id="bg-slider"></div>
+        <div class="bg-overlay-gradient"></div>
+
         <div class="auth-box">
             <h2>Analisa Ramalan Jangka Panjang</h2>
             <input type="email" id="email" placeholder="Enter your email" required>
@@ -199,25 +214,35 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 
     <script>
-        // --- DYNAMIC BACKGROUND IMAGES (1 Second Sequence) ---
+        // --- DYNAMIC BACKGROUND SWIPE ANIMATION ---
         const mapImages = [
-            'url("https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=1920&q=80")',
-            'url("https://images.unsplash.com/photo-1584972208009-41b12b596205?auto=format&fit=crop&w=1920&q=80")',
-            'url("https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1920&q=80")',
-            'url("https://images.unsplash.com/photo-1526778548025-fa2fbfb25f19?auto=format&fit=crop&w=1920&q=80")',
-            'url("https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&w=1920&q=80")'
+            'World_mapTravel.jpg',
+            'World_map.jpg',
+            'clasic map_3.jpg',
+            'clasic map_2.jpg',
+            'clasic map.jpg'
         ];
-        let currentImageIndex = 0;
-        const authOverlayElement = document.getElementById('auth-overlay');
         
-        function changeBackground() {
-            authOverlayElement.style.background = `linear-gradient(rgba(20, 25, 35, 0.8), rgba(20, 25, 35, 0.8)), ${mapImages[currentImageIndex]} center center / cover no-repeat`;
+        const sliderElement = document.getElementById('bg-slider');
+        
+        // Populate slider with images
+        mapImages.forEach(src => {
+            const slide = document.createElement('div');
+            slide.className = 'bg-slide';
+            slide.style.backgroundImage = `url('${src}')`;
+            sliderElement.appendChild(slide);
+        });
+
+        let currentImageIndex = 0;
+        
+        function slideBackground() {
             currentImageIndex = (currentImageIndex + 1) % mapImages.length;
+            // Move slider to the left by multiples of 20% (since width is 500%)
+            sliderElement.style.transform = `translateX(-${currentImageIndex * 20}%)`;
         }
         
-        // Initialize first background and start rotation
-        changeBackground();
-        setInterval(changeBackground, 1000);
+        // Start rotation every 3 seconds for smoother viewing
+        setInterval(slideBackground, 3000);
 
         // --- SECURITY IMPLEMENTATIONS ---
         document.addEventListener('contextmenu', event => event.preventDefault());
@@ -481,7 +506,6 @@
             };
             accordionControl.addTo(map);
 
-            // --- GROUP 1: Event Rainfall Data ---
             Papa.parse("data.csv", {
                 download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
                 complete: function(results) {
@@ -521,7 +545,6 @@
                 }
             });
 
-            // --- GROUP 2: Mean Monthly Rainfall Shapefiles ---
             const months = ['JAN', 'FEB', 'MAC', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
             var content2 = document.getElementById('content-2');
 
@@ -563,7 +586,6 @@
                 });
             });
 
-            // --- GROUP 3 & 4: CSV Station Data + Animation FIX ---
             const stationCsvUrl = "station list/Start Year Principal Station - Principal Station.csv"; 
             
             Papa.parse(stationCsvUrl, {
@@ -620,7 +642,6 @@
                         content3.appendChild(label);
                     });
 
-                    // --- ANIMATION LOGIC (GROUP 4) ---
                     const btnPlay = document.getElementById('btnPlayAnim');
                     const btnStop = document.getElementById('btnStopAnim');
                     const yearDisplay = document.getElementById('anim-year-display');
