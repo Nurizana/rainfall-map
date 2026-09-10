@@ -74,26 +74,25 @@
         .leaflet-tooltip-top.contour-label::before, .leaflet-tooltip-bottom.contour-label::before,
         .leaflet-tooltip-center.contour-label::before { display: none; }
 
-        /* Security Overlay Styling - Updated for Swipe Effect */
+        /* Security Overlay Styling */
         #auth-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 9999; display: flex; flex-direction: column;
             justify-content: center; align-items: center; color: white; font-family: Arial, sans-serif;
             background-color: #141923;
-            overflow: hidden; /* Hides elements outside the screen during swipe */
+            overflow: hidden; 
         }
         
-        /* New slider containers for background */
+        /* Updated Background Slider for Infinite Loop */
         #bg-slider {
             position: absolute; top: 0; left: 0; 
-            width: 500%; /* 5 images = 500% width */ 
             height: 100%;
             display: flex;
-            transition: transform 1s ease-in-out;
             z-index: 1;
         }
         .bg-slide {
-            width: 20%; /* 100% / 5 images */
+            width: 100vw; 
+            flex-shrink: 0;
             height: 100%;
             background-size: cover;
             background-position: center;
@@ -110,7 +109,7 @@
             box-shadow: 0 8px 30px rgba(0,0,0,0.7); text-align: center; 
             width: 90%; max-width: 350px; 
             border: 1px solid rgba(255, 255, 255, 0.1);
-            z-index: 3; /* Keep above the background */
+            z-index: 3;
         }
         .auth-box h2 {
             margin-top: 0; margin-bottom: 25px;
@@ -177,7 +176,7 @@
 <body>
 
     <div id="auth-overlay">
-        <!-- New Background Slider -->
+        <!-- Background Slider -->
         <div id="bg-slider"></div>
         <div class="bg-overlay-gradient"></div>
 
@@ -214,7 +213,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 
     <script>
-        // --- DYNAMIC BACKGROUND SWIPE ANIMATION ---
+        // --- DYNAMIC BACKGROUND INFINITE SWIPE ANIMATION ---
         const mapImages = [
             'World_mapTravel.jpg',
             'World_map.jpg',
@@ -229,20 +228,36 @@
         mapImages.forEach(src => {
             const slide = document.createElement('div');
             slide.className = 'bg-slide';
-            // encodeURI handles files with spaces in their names perfectly
             slide.style.backgroundImage = `url('${encodeURI(src)}')`;
             sliderElement.appendChild(slide);
         });
 
-        let currentImageIndex = 0;
+        // Clone the first image to create a seamless infinite loop
+        const firstClone = sliderElement.children[0].cloneNode(true);
+        sliderElement.appendChild(firstClone);
+
+        let currentSlide = 0;
+        const totalOriginalImages = mapImages.length;
         
         function slideBackground() {
-            currentImageIndex = (currentImageIndex + 1) % mapImages.length;
-            // Move slider to the left by multiples of 20% (since width is 500%)
-            sliderElement.style.transform = `translateX(-${currentImageIndex * 20}%)`;
+            currentSlide++;
+            
+            // Re-enable smooth transition for normal slides
+            sliderElement.style.transition = 'transform 1s ease-in-out';
+            sliderElement.style.transform = `translateX(-${currentSlide * 100}vw)`;
+            
+            // If the slider hits the cloned first image at the very end
+            if (currentSlide === totalOriginalImages) {
+                setTimeout(() => {
+                    // Instantly snap back to the true first image without any animation
+                    sliderElement.style.transition = 'none';
+                    currentSlide = 0;
+                    sliderElement.style.transform = `translateX(0)`;
+                }, 1000); // Matches the 1s ease-in-out transition time
+            }
         }
         
-        // Start rotation every 3 seconds for smoother viewing
+        // Start sliding every 3 seconds
         setInterval(slideBackground, 3000);
 
         // --- SECURITY IMPLEMENTATIONS ---
