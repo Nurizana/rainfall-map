@@ -15,8 +15,25 @@
             -webkit-user-select: none; 
             -ms-user-select: none; 
             user-select: none; 
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            background-color: #141923;
         }
-        html, body, #map, #map-climate, #map-kl { height: 100%; width: 100%; position: absolute; top: 0; left: 0; }
+        
+        /* Flex wrapper to separate Top UI Header and Map Content */
+        #map-wrapper {
+            flex-grow: 1;
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        #map, #map-climate, #map-kl { 
+            height: 100%; width: 100%; position: absolute; top: 0; left: 0; 
+        }
         
         #map { z-index: 1; }
         #map-climate, #map-kl { display: none; z-index: 1; }
@@ -86,7 +103,6 @@
             overflow: hidden; 
         }
         
-        /* Updated Background Slider for Infinite Loop */
         #bg-slider {
             position: absolute; top: 0; left: 0; 
             height: 100%;
@@ -134,17 +150,6 @@
         .auth-box button:hover { background: #6baed6; }
         #auth-message { color: #f1c40f; font-size: 13px; margin-top: 15px; font-weight: bold; }
 
-        #user-panel {
-            position: absolute; top: 10px; right: 10px; z-index: 1000;
-            background: white; padding: 8px 15px; border-radius: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3); display: none; align-items: center;
-            gap: 15px; font-family: Arial, sans-serif; font-size: 13px; color: #333; font-weight: bold;
-        }
-        #btn-app-logout {
-            background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold;
-        }
-        #btn-app-logout:hover { background: #c0392b; }
-
         #timeout-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.85); z-index: 10000; display: none; flex-direction: column;
@@ -157,21 +162,35 @@
         .timeout-box h2 { margin-top: 0; }
         #countdown-timer { font-size: 48px; font-weight: bold; margin: 20px 0; color: yellow; }
 
-        /* Top Navigation Tabs - Tidy & Consistent */
-        #top-tabs {
-            position: fixed;
-            top: 0;
-            left: 55px; /* Offset to clear zoom controls */
-            z-index: 2000;
+        /* Unified Top Navigation Header */
+        #top-ui-container {
+            flex-shrink: 0;
+            width: 100%;
+            background: #141923;
+            border-bottom: 2px solid #3182bd;
             display: none; /* Shown after login */
+            justify-content: space-between;
+            align-items: flex-end; 
+            padding: 10px 15px 0 15px;
+            box-sizing: border-box;
+            flex-wrap: wrap; 
+            gap: 10px;
+            z-index: 2000;
+        }
+
+        #top-tabs {
+            display: flex;
             flex-direction: row;
+            flex-wrap: wrap;
+            gap: 5px;
         }
         
         .top-tab-btn {
-            background: #e2e8f0;
-            color: #102a43;
-            border: 1px solid #94a3b8;
-            border-top: none;
+            background: #282c34;
+            color: #cbd5e1;
+            border: 1px solid #444;
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
             padding: 0 15px;
             font-family: Arial, sans-serif;
             font-size: 13px;
@@ -181,26 +200,37 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
-            transition: background 0.3s;
+            transition: all 0.3s;
         }
         
-        .top-tab-btn:hover, .top-tab-btn.active {
-            background: #cbd5e1;
-        }
+        .top-tab-btn:hover { background: #3a3f4b; color: #fff; }
+        .top-tab-btn.active { background: #3182bd; color: white; border-color: #3182bd; }
 
-        /* Inline Triangle Indicator */
         .inline-arrow {
             display: inline-block;
             width: 0;
             height: 0;
             border-left: 6px solid transparent;
             border-right: 6px solid transparent;
-            border-top: 8px solid #0047ab;
-            margin-left: 10px; /* Spacing next to text */
+            border-top: 8px solid #ffffff; 
+            margin-left: 10px; 
         }
 
-        .leaflet-top.leaflet-right { margin-top: 60px; }
+        #user-panel {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 10px; 
+        }
+
+        #btn-app-logout {
+            background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold;
+        }
+        #btn-app-logout:hover { background: #c0392b; }
         
         .btn-animate {
             width: 100%; padding: 8px; background: #e74c3c; color: white; border: none; 
@@ -210,13 +240,15 @@
         .btn-animate-stop { background: #7f8c8d; }
         .btn-animate-stop:hover { background: #95a5a6; }
 
-        @media (max-width: 600px) {
+        @media (max-width: 850px) {
+            #top-ui-container { padding: 10px; justify-content: center; border-bottom: none; }
+            #top-tabs { justify-content: center; }
+            .top-tab-btn { border-radius: 4px; border-bottom: 1px solid #444; height: 35px; font-size: 11px; }
+            #user-panel { margin-bottom: 5px; margin-top: 5px; width: 100%; justify-content: center; }
             .custom-control-panel { width: 200px; font-size: 12px; }
             .legend { font-size: 11px; max-height: 200px; padding: 8px; }
             .auth-box { padding: 25px; }
             .auth-box h2 { font-size: 18px; }
-            #user-panel { flex-direction: column; top: auto; bottom: 20px; right: 50%; transform: translateX(50%); border-radius: 10px; gap: 5px; }
-            #top-tabs { left: 45px; transform: scale(0.7); transform-origin: top left; }
         }
     </style>
 </head>
@@ -246,30 +278,34 @@
         </div>
     </div>
 
-    <div id="user-panel">
-        <span id="user-email-display"></span>
-        <button id="btn-app-logout">Log Out</button>
+    <!-- Unified Top Header that ensures no overlapping -->
+    <div id="top-ui-container">
+        <div id="top-tabs">
+            <div class="top-tab-btn active" id="tabMain" title="Go to Main Map">
+                <span>🏠 Main Map</span>
+            </div>
+            <div class="top-tab-btn" id="tabClimate" title="Toggle Malaysia Climate Change Scenarios">
+                <span>Malaysia Climate Change Scenarios.</span>
+                <span class="inline-arrow"></span>
+            </div>
+            <div class="top-tab-btn" id="tabKL" title="Toggle Kuala Lumpur Monsoon Activity Centre">
+                <span>Kuala Lumpur Monsoon Activity Centre.</span>
+                <span class="inline-arrow"></span>
+            </div>
+        </div>
+
+        <div id="user-panel">
+            <span id="user-email-display"></span>
+            <button id="btn-app-logout">Log Out</button>
+        </div>
     </div>
 
-    <!-- Top Tabs with Inline Triangles -->
-    <div id="top-tabs">
-        <div class="top-tab-btn active" id="tabMain" title="Go to Main Map">
-            <span>🏠 Main Map</span>
-        </div>
-        <div class="top-tab-btn" id="tabClimate" title="Toggle Malaysia Climate Change Scenarios" style="border-left: none;">
-            <span>Malaysia Climate Change Scenarios.</span>
-            <span class="inline-arrow"></span>
-        </div>
-        <div class="top-tab-btn" id="tabKL" title="Toggle Kuala Lumpur Monsoon Activity Centre" style="border-left: none;">
-            <span>Kuala Lumpur Monsoon Activity Centre.</span>
-            <span class="inline-arrow"></span>
-        </div>
+    <!-- Flexible Map Container -->
+    <div id="map-wrapper">
+        <div id="map"></div>
+        <div id="map-climate"></div>
+        <div id="map-kl"></div>
     </div>
-
-    <!-- Map Containers -->
-    <div id="map"></div>
-    <div id="map-climate"></div>
-    <div id="map-kl"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -289,7 +325,6 @@
         
         const sliderElement = document.getElementById('bg-slider');
         
-        // Populate slider with images
         mapImages.forEach(src => {
             const slide = document.createElement('div');
             slide.className = 'bg-slide';
@@ -297,7 +332,6 @@
             sliderElement.appendChild(slide);
         });
 
-        // Clone the first image to create a seamless infinite loop
         const firstClone = sliderElement.children[0].cloneNode(true);
         sliderElement.appendChild(firstClone);
 
@@ -307,22 +341,18 @@
         function slideBackground() {
             currentSlide++;
             
-            // Re-enable smooth transition for normal slides
             sliderElement.style.transition = 'transform 1s ease-in-out';
             sliderElement.style.transform = `translateX(-${currentSlide * 100}vw)`;
             
-            // If the slider hits the cloned first image at the very end
             if (currentSlide === totalOriginalImages) {
                 setTimeout(() => {
-                    // Instantly snap back to the true first image without any animation
                     sliderElement.style.transition = 'none';
                     currentSlide = 0;
                     sliderElement.style.transform = `translateX(0)`;
-                }, 1000); // Matches the 1s ease-in-out transition time
+                }, 1000); 
             }
         }
         
-        // Start sliding every 3 seconds
         setInterval(slideBackground, 3000);
 
         // --- SECURITY IMPLEMENTATIONS ---
@@ -358,9 +388,7 @@
         const btnRegister = document.getElementById('btnRegister');
         const authMessage = document.getElementById('auth-message');
         const authOverlay = document.getElementById('auth-overlay');
-        const userPanel = document.getElementById('user-panel');
-        const topTabs = document.getElementById('top-tabs');
-        const tabMain = document.getElementById('tabMain');
+        const topUiContainer = document.getElementById('top-ui-container');
         const userEmailDisplay = document.getElementById('user-email-display');
         const btnAppLogout = document.getElementById('btn-app-logout');
 
@@ -414,8 +442,7 @@
         auth.onAuthStateChanged(user => {
             if (user && user.emailVerified) {
                 authOverlay.style.display = 'none';
-                userPanel.style.display = 'flex';   
-                topTabs.style.display = 'flex'; // Show tabs upon login
+                topUiContainer.style.display = 'flex'; 
                 userEmailDisplay.innerText = user.email;
                 initializeMap();
                 startIdleTimer(); 
@@ -425,8 +452,7 @@
                 clearTimers();
             } else {
                 authOverlay.style.display = 'flex';
-                userPanel.style.display = 'none';   
-                topTabs.style.display = 'none'; // Hide tabs
+                topUiContainer.style.display = 'none'; 
                 clearTimers(); 
             }
         });
@@ -473,7 +499,6 @@
         let mapKL = null;
         let activeMapId = 'map';
 
-        // Initialize alternative blank maps logic
         function initAlternativeMaps() {
             if (!mapClimate) {
                 mapClimate = L.map('map-climate', { center: [2.5, 103.0], zoom: 8 });
@@ -481,15 +506,13 @@
                 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 }).addTo(mapClimate);
             }
             if (!mapKL) {
-                mapKL = L.map('map-kl', { center: [3.1390, 101.6869], zoom: 10 }); // Center strictly on KL
+                mapKL = L.map('map-kl', { center: [3.1390, 101.6869], zoom: 10 }); 
                 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, attribution: 'Tiles &copy; Esri' }).addTo(mapKL);
                 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 }).addTo(mapKL);
             }
         }
 
-        // Toggle visibility between map canvases
         function toggleMap(targetMapId) {
-            // Click active tab again to toggle back to main map
             if (activeMapId === targetMapId) {
                 targetMapId = 'map';
             }
@@ -501,7 +524,6 @@
             document.getElementById(targetMapId).style.display = 'block';
             activeMapId = targetMapId;
 
-            // Highlight Active Tab visually
             document.getElementById('tabMain').classList.remove('active');
             document.getElementById('tabClimate').classList.remove('active');
             document.getElementById('tabKL').classList.remove('active');
@@ -514,7 +536,6 @@
                 document.getElementById('tabMain').classList.add('active');
             }
 
-            // Handle UI changes based on map status
             if (targetMapId !== 'map') {
                 initAlternativeMaps();
                 if (targetMapId === 'map-climate') mapClimate.invalidateSize();
@@ -522,7 +543,6 @@
             }
         }
 
-        // Event Listeners for Navigating Maps
         document.getElementById('tabMain').addEventListener('click', () => toggleMap('map'));
         document.getElementById('tabClimate').addEventListener('click', () => toggleMap('map-climate'));
         document.getElementById('tabKL').addEventListener('click', () => toggleMap('map-kl'));
