@@ -200,29 +200,6 @@
             margin-left: 10px; /* Spacing next to text */
         }
 
-        /* Main Map Home Button - Green Theme & Positioned Below Tabs */
-        #btn-home-nav {
-            position: fixed;
-            top: 50px; /* Dropped down so it doesn't cover the top tabs */
-            left: 200px;
-            z-index: 3000;
-            background: #27ae60;
-            color: white;
-            border: 2px solid white;
-            padding: 8px 25px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-weight: bold;
-            font-family: Arial, sans-serif;
-            font-size: 14px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-            display: none; /* Hidden by default */
-            transition: background 0.3s;
-        }
-        #btn-home-nav:hover {
-            background: #2ecc71;
-        }
-
         .leaflet-top.leaflet-right { margin-top: 60px; }
         
         .btn-animate {
@@ -240,7 +217,6 @@
             .auth-box h2 { font-size: 18px; }
             #user-panel { flex-direction: column; top: auto; bottom: 20px; right: 50%; transform: translateX(50%); border-radius: 10px; gap: 5px; }
             #top-tabs { left: 45px; transform: scale(0.7); transform-origin: top left; }
-            #btn-home-nav { left: 100px; top: 40px; }
         }
     </style>
 </head>
@@ -275,12 +251,12 @@
         <button id="btn-app-logout">Log Out</button>
     </div>
 
-    <!-- Main Map Home Button (Visible below tabs on alternative maps) -->
-    <button id="btn-home-nav">🏠 Main Map</button>
-
     <!-- Top Tabs with Inline Triangles -->
     <div id="top-tabs">
-        <div class="top-tab-btn" id="tabClimate" title="Toggle Malaysia Climate Change Scenarios">
+        <div class="top-tab-btn active" id="tabMain" title="Go to Main Map">
+            <span>🏠 Main Map</span>
+        </div>
+        <div class="top-tab-btn" id="tabClimate" title="Toggle Malaysia Climate Change Scenarios" style="border-left: none;">
             <span>Malaysia Climate Change Scenarios.</span>
             <span class="inline-arrow"></span>
         </div>
@@ -384,7 +360,7 @@
         const authOverlay = document.getElementById('auth-overlay');
         const userPanel = document.getElementById('user-panel');
         const topTabs = document.getElementById('top-tabs');
-        const btnHomeNav = document.getElementById('btn-home-nav');
+        const tabMain = document.getElementById('tabMain');
         const userEmailDisplay = document.getElementById('user-email-display');
         const btnAppLogout = document.getElementById('btn-app-logout');
 
@@ -451,7 +427,6 @@
                 authOverlay.style.display = 'flex';
                 userPanel.style.display = 'none';   
                 topTabs.style.display = 'none'; // Hide tabs
-                btnHomeNav.style.display = 'none';
                 clearTimers(); 
             }
         });
@@ -527,6 +502,7 @@
             activeMapId = targetMapId;
 
             // Highlight Active Tab visually
+            document.getElementById('tabMain').classList.remove('active');
             document.getElementById('tabClimate').classList.remove('active');
             document.getElementById('tabKL').classList.remove('active');
 
@@ -534,13 +510,12 @@
                 document.getElementById('tabClimate').classList.add('active');
             } else if (targetMapId === 'map-kl') {
                 document.getElementById('tabKL').classList.add('active');
+            } else {
+                document.getElementById('tabMain').classList.add('active');
             }
 
             // Handle UI changes based on map status
-            if (targetMapId === 'map') {
-                btnHomeNav.style.display = 'none';
-            } else {
-                btnHomeNav.style.display = 'inline-flex';
+            if (targetMapId !== 'map') {
                 initAlternativeMaps();
                 if (targetMapId === 'map-climate') mapClimate.invalidateSize();
                 if (targetMapId === 'map-kl') mapKL.invalidateSize();
@@ -548,9 +523,9 @@
         }
 
         // Event Listeners for Navigating Maps
+        document.getElementById('tabMain').addEventListener('click', () => toggleMap('map'));
         document.getElementById('tabClimate').addEventListener('click', () => toggleMap('map-climate'));
         document.getElementById('tabKL').addEventListener('click', () => toggleMap('map-kl'));
-        document.getElementById('btn-home-nav').addEventListener('click', () => toggleMap('map'));
 
         function initializeMap() {
             if (isMapLoaded) return; 
