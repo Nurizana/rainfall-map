@@ -15,22 +15,13 @@
             -webkit-user-select: none; 
             -ms-user-select: none; 
             user-select: none; 
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            width: 100vw;
             overflow: hidden;
             background-color: #141923;
         }
         
-        /* Flex wrapper to separate Top UI Header and Map Content */
-        #map-wrapper {
-            flex-grow: 1;
-            position: relative;
-            width: 100%;
-            height: 100%;
-        }
+        html, body { height: 100%; width: 100%; }
 
+        /* Maps now stretch completely to the top, under the transparent ribbon */
         #map, #map-climate, #map-kl { 
             height: 100%; width: 100%; position: absolute; top: 0; left: 0; 
         }
@@ -162,31 +153,36 @@
         .timeout-box h2 { margin-top: 0; }
         #countdown-timer { font-size: 48px; font-weight: bold; margin: 20px 0; color: yellow; }
 
-        /* Unified Top Navigation Header */
+
+        /* ---------------------------------------------------
+           NEW LAYOUT: Transparent Overlay & Top Right Panel 
+           --------------------------------------------------- */
+           
         #top-ui-container {
-            flex-shrink: 0;
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            background: #141923;
+            height: 52px; /* Fixed height for the ribbon */
+            background: transparent; /* Makes the top ribbon background transparent */
             border-bottom: 2px solid #3182bd;
-            display: none; /* Shown after login */
-            justify-content: space-between;
-            align-items: flex-end; 
-            padding: 10px 15px 0 15px;
-            box-sizing: border-box;
-            flex-wrap: wrap; 
-            gap: 10px;
+            display: none; /* Block when visible */
             z-index: 2000;
+            pointer-events: none; /* Clicks pass through to the map underneath */
         }
 
         #top-tabs {
+            position: absolute;
+            bottom: 0; /* Tabs sit flush on the blue line */
+            left: 55px; /* Safely clears leaflet zoom controls */
             display: flex;
             flex-direction: row;
-            flex-wrap: wrap;
             gap: 5px;
+            pointer-events: auto; /* Re-enables clicking on tabs */
         }
         
         .top-tab-btn {
-            background: #282c34;
+            background: rgba(40, 44, 52, 0.9); /* Slight tint for text readability against map */
             color: #cbd5e1;
             border: 1px solid #444;
             border-bottom: none;
@@ -201,9 +197,10 @@
             align-items: center;
             justify-content: center;
             transition: all 0.3s;
+            box-shadow: 2px -2px 5px rgba(0,0,0,0.3);
         }
         
-        .top-tab-btn:hover { background: #3a3f4b; color: #fff; }
+        .top-tab-btn:hover { background: rgba(58, 63, 75, 1); color: #fff; }
         .top-tab-btn.active { background: #3182bd; color: white; border-color: #3182bd; }
 
         .inline-arrow {
@@ -216,21 +213,34 @@
             margin-left: 10px; 
         }
 
+        /* User Panel strictly locked to Most Top Right */
         #user-panel {
+            position: absolute;
+            right: 20px;
+            bottom: 8px; /* Centers vertically within the 52px ribbon */
             display: flex;
             align-items: center;
             gap: 15px;
-            color: white;
+            color: #ffffff;
             font-family: Arial, sans-serif;
-            font-size: 13px;
+            font-size: 14px;
             font-weight: bold;
-            margin-bottom: 10px; 
+            pointer-events: auto; /* Re-enables clicking */
+            /* Text shadow ensures email is readable even if base map is pure white */
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.9), -1px -1px 3px rgba(0,0,0,0.9), 1px -1px 3px rgba(0,0,0,0.9), -1px 1px 3px rgba(0,0,0,0.9);
         }
 
         #btn-app-logout {
             background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            text-shadow: none; /* Keep button text flat */
         }
         #btn-app-logout:hover { background: #c0392b; }
+        
+        /* --------------------------------------------------- */
+
+
+        .leaflet-top.leaflet-right { margin-top: 60px; } /* Ensures map controls clear the ribbon */
         
         .btn-animate {
             width: 100%; padding: 8px; background: #e74c3c; color: white; border: none; 
@@ -240,11 +250,14 @@
         .btn-animate-stop { background: #7f8c8d; }
         .btn-animate-stop:hover { background: #95a5a6; }
 
-        @media (max-width: 850px) {
-            #top-ui-container { padding: 10px; justify-content: center; border-bottom: none; }
-            #top-tabs { justify-content: center; }
-            .top-tab-btn { border-radius: 4px; border-bottom: 1px solid #444; height: 35px; font-size: 11px; }
-            #user-panel { margin-bottom: 5px; margin-top: 5px; width: 100%; justify-content: center; }
+        @media (max-width: 950px) {
+            .top-tab-btn { padding: 0 8px; font-size: 11px; }
+            #user-panel { gap: 10px; font-size: 12px; right: 10px; }
+        }
+        @media (max-width: 700px) {
+            #top-tabs { left: 45px; }
+            .top-tab-btn { height: 32px; font-size: 10px; }
+            #user-email-display { display: none; } /* Hides email on very small screens to fit Tabs + Logout securely */
             .custom-control-panel { width: 200px; font-size: 12px; }
             .legend { font-size: 11px; max-height: 200px; padding: 8px; }
             .auth-box { padding: 25px; }
@@ -278,8 +291,9 @@
         </div>
     </div>
 
-    <!-- Unified Top Header that ensures no overlapping -->
+    <!-- Unified Transparent Overlay -->
     <div id="top-ui-container">
+        <!-- Left Aligned Tabs -->
         <div id="top-tabs">
             <div class="top-tab-btn active" id="tabMain" title="Go to Main Map">
                 <span>🏠 Main Map</span>
@@ -294,18 +308,17 @@
             </div>
         </div>
 
+        <!-- Right Aligned Panel -->
         <div id="user-panel">
             <span id="user-email-display"></span>
             <button id="btn-app-logout">Log Out</button>
         </div>
     </div>
 
-    <!-- Flexible Map Container -->
-    <div id="map-wrapper">
-        <div id="map"></div>
-        <div id="map-climate"></div>
-        <div id="map-kl"></div>
-    </div>
+    <!-- Map Containers stretch completely behind the transparent overlay -->
+    <div id="map"></div>
+    <div id="map-climate"></div>
+    <div id="map-kl"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -442,7 +455,7 @@
         auth.onAuthStateChanged(user => {
             if (user && user.emailVerified) {
                 authOverlay.style.display = 'none';
-                topUiContainer.style.display = 'flex'; 
+                topUiContainer.style.display = 'block'; 
                 userEmailDisplay.innerText = user.email;
                 initializeMap();
                 startIdleTimer(); 
