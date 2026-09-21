@@ -16,7 +16,10 @@
             -ms-user-select: none; 
             user-select: none; 
         }
-        html, body, #map { height: 100%; width: 100%; }
+        html, body, #map, #map-climate, #map-kl { height: 100%; width: 100%; position: absolute; top: 0; left: 0; }
+        
+        #map { z-index: 1; }
+        #map-climate, #map-kl { display: none; z-index: 1; }
         
         @media print {
             body { display: none !important; }
@@ -154,6 +157,60 @@
         .timeout-box h2 { margin-top: 0; }
         #countdown-timer { font-size: 48px; font-weight: bold; margin: 20px 0; color: yellow; }
 
+        /* Side Navigation Tabs */
+        #side-tabs {
+            position: fixed;
+            top: 20%;
+            left: 0;
+            z-index: 2000;
+            display: none; /* Shown after login */
+            align-items: flex-start;
+        }
+        .side-tab-wrapper {
+            position: relative;
+            display: flex;
+            margin-right: 5px;
+        }
+        .side-tab-btn {
+            background: #d9e2ec;
+            color: #102a43;
+            border: 2px solid #334e68;
+            border-left: none;
+            padding: 15px 5px;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            font-weight: bold;
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            cursor: pointer;
+            height: 280px;
+            text-align: center;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background 0.3s;
+        }
+        .side-tab-btn:hover {
+            background: #bcccdc;
+        }
+        .tab-kl .side-tab-btn {
+            height: 280px;
+            margin-top: 60px; /* Offset to match the reference image */
+        }
+        .tab-arrow {
+            width: 0;
+            height: 0;
+            border-top: 12px solid transparent;
+            border-bottom: 12px solid transparent;
+            border-left: 15px solid #3182bd;
+            position: absolute;
+            right: -15px;
+            top: 15px;
+            z-index: 2001;
+            pointer-events: none;
+        }
+
         .leaflet-top.leaflet-right { margin-top: 60px; }
         
         .btn-animate {
@@ -170,6 +227,7 @@
             .auth-box { padding: 25px; }
             .auth-box h2 { font-size: 18px; }
             #user-panel { flex-direction: column; top: auto; bottom: 20px; right: 50%; transform: translateX(50%); border-radius: 10px; gap: 5px; }
+            #side-tabs { top: 10%; transform: scale(0.8); transform-origin: top left; }
         }
     </style>
 </head>
@@ -204,7 +262,22 @@
         <button id="btn-app-logout">Log Out</button>
     </div>
 
+    <!-- Side Tabs -->
+    <div id="side-tabs">
+        <div class="side-tab-wrapper tab-climate" id="tabClimate" title="Toggle Malaysia Climate Change Scenarios">
+            <div class="side-tab-btn">Malaysia Climate Change Scenarios.</div>
+            <div class="tab-arrow"></div>
+        </div>
+        <div class="side-tab-wrapper tab-kl" id="tabKL" title="Toggle Kuala Lumpur Monsoon Activity Centre">
+            <div class="side-tab-btn">Kuala Lumpur Monsoon Activity Centre.</div>
+            <div class="tab-arrow"></div>
+        </div>
+    </div>
+
+    <!-- Map Containers -->
     <div id="map"></div>
+    <div id="map-climate"></div>
+    <div id="map-kl"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -294,6 +367,7 @@
         const authMessage = document.getElementById('auth-message');
         const authOverlay = document.getElementById('auth-overlay');
         const userPanel = document.getElementById('user-panel');
+        const sideTabs = document.getElementById('side-tabs');
         const userEmailDisplay = document.getElementById('user-email-display');
         const btnAppLogout = document.getElementById('btn-app-logout');
 
@@ -348,6 +422,7 @@
             if (user && user.emailVerified) {
                 authOverlay.style.display = 'none';
                 userPanel.style.display = 'flex';   
+                sideTabs.style.display = 'flex'; // Show tabs upon login
                 userEmailDisplay.innerText = user.email;
                 initializeMap();
                 startIdleTimer(); 
@@ -358,6 +433,7 @@
             } else {
                 authOverlay.style.display = 'flex';
                 userPanel.style.display = 'none';   
+                sideTabs.style.display = 'none'; // Hide tabs
                 clearTimers(); 
             }
         });
@@ -400,6 +476,48 @@
         };
 
         let isMapLoaded = false;
+        let mapClimate = null;
+        let mapKL = null;
+        let activeMapId = 'map';
+
+        // Initialize alternative blank maps logic
+        function initAlternativeMaps() {
+            if (!mapClimate) {
+                mapClimate = L.map('map-climate', { center: [2.5, 103.0], zoom: 8 });
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, attribution: 'Tiles &copy; Esri' }).addTo(mapClimate);
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 }).addTo(mapClimate);
+            }
+            if (!mapKL) {
+                mapKL = L.map('map-kl', { center: [3.1390, 101.6869], zoom: 10 }); // Center strictly on KL
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, attribution: 'Tiles &copy; Esri' }).addTo(mapKL);
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 }).addTo(mapKL);
+            }
+        }
+
+        // Toggle visibility between map canvases
+        function toggleMap(targetMapId) {
+            // Click active tab again to toggle back to main map
+            if (activeMapId === targetMapId) {
+                targetMapId = 'map';
+            }
+
+            document.getElementById('map').style.display = 'none';
+            document.getElementById('map-climate').style.display = 'none';
+            document.getElementById('map-kl').style.display = 'none';
+            
+            document.getElementById(targetMapId).style.display = 'block';
+            activeMapId = targetMapId;
+
+            // Load and resize specific alternative maps
+            if (targetMapId === 'map-climate' || targetMapId === 'map-kl') {
+                initAlternativeMaps();
+                if (targetMapId === 'map-climate') mapClimate.invalidateSize();
+                if (targetMapId === 'map-kl') mapKL.invalidateSize();
+            }
+        }
+
+        document.getElementById('tabClimate').addEventListener('click', () => toggleMap('map-climate'));
+        document.getElementById('tabKL').addEventListener('click', () => toggleMap('map-kl'));
 
         function initializeMap() {
             if (isMapLoaded) return; 
@@ -728,3 +846,4 @@
     </script>
 </body>
 </html>
+```<FollowUp>
