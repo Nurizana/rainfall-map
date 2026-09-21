@@ -157,58 +157,74 @@
         .timeout-box h2 { margin-top: 0; }
         #countdown-timer { font-size: 48px; font-weight: bold; margin: 20px 0; color: yellow; }
 
-        /* Side Navigation Tabs */
-        #side-tabs {
+        /* Top Navigation Tabs */
+        #top-tabs {
             position: fixed;
-            top: 20%;
-            left: 0;
+            top: 0;
+            left: 55px; /* Offset to sit right of zoom controls */
             z-index: 2000;
             display: none; /* Shown after login */
+            flex-direction: row;
             align-items: flex-start;
         }
-        .side-tab-wrapper {
+        .top-tab-wrapper {
             position: relative;
             display: flex;
-            margin-right: 5px;
+            flex-direction: column;
+            align-items: center;
         }
-        .side-tab-btn {
+        .top-tab-btn {
             background: #d9e2ec;
             color: #102a43;
             border: 2px solid #334e68;
-            border-left: none;
-            padding: 15px 5px;
+            border-top: none;
+            padding: 10px 15px;
             font-family: Arial, sans-serif;
             font-size: 13px;
             font-weight: bold;
-            writing-mode: vertical-rl;
-            transform: rotate(180deg);
             cursor: pointer;
-            height: 280px;
+            width: 250px;
             text-align: center;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.4);
-            display: flex;
-            justify-content: center;
-            align-items: center;
             transition: background 0.3s;
         }
-        .side-tab-btn:hover {
+        .top-tab-btn:hover {
             background: #bcccdc;
-        }
-        .tab-kl .side-tab-btn {
-            height: 280px;
-            margin-top: 60px; /* Offset to match the reference image */
         }
         .tab-arrow {
             width: 0;
             height: 0;
-            border-top: 12px solid transparent;
-            border-bottom: 12px solid transparent;
-            border-left: 15px solid #3182bd;
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-top: 15px solid #0047ab;
             position: absolute;
-            right: -15px;
-            top: 15px;
+            bottom: -15px;
             z-index: 2001;
             pointer-events: none;
+        }
+
+        /* Home Button - specifically for Blank Web Maps */
+        #btn-home-nav {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3000;
+            background: #27ae60;
+            color: white;
+            border: 2px solid #fff;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            display: none; /* Hidden by default */
+            transition: background 0.3s;
+        }
+        #btn-home-nav:hover {
+            background: #2ecc71;
         }
 
         .leaflet-top.leaflet-right { margin-top: 60px; }
@@ -227,7 +243,8 @@
             .auth-box { padding: 25px; }
             .auth-box h2 { font-size: 18px; }
             #user-panel { flex-direction: column; top: auto; bottom: 20px; right: 50%; transform: translateX(50%); border-radius: 10px; gap: 5px; }
-            #side-tabs { top: 10%; transform: scale(0.8); transform-origin: top left; }
+            #top-tabs { left: 45px; transform: scale(0.7); transform-origin: top left; }
+            .top-tab-btn { width: 180px; }
         }
     </style>
 </head>
@@ -262,15 +279,18 @@
         <button id="btn-app-logout">Log Out</button>
     </div>
 
-    <!-- Side Tabs -->
-    <div id="side-tabs">
-        <div class="side-tab-wrapper tab-climate" id="tabClimate" title="Toggle Malaysia Climate Change Scenarios">
-            <div class="side-tab-btn">Malaysia Climate Change Scenarios.</div>
-            <div class="tab-arrow"></div>
+    <!-- Home Button (Visible only on alternative blank maps) -->
+    <button id="btn-home-nav">🏠 Main Map</button>
+
+    <!-- Top Tabs -->
+    <div id="top-tabs">
+        <div class="top-tab-wrapper tab-climate" id="tabClimate" title="Toggle Malaysia Climate Change Scenarios">
+            <div class="top-tab-btn">Malaysia Climate Change Scenarios.</div>
+            <div class="tab-arrow" style="left: 30%;"></div>
         </div>
-        <div class="side-tab-wrapper tab-kl" id="tabKL" title="Toggle Kuala Lumpur Monsoon Activity Centre">
-            <div class="side-tab-btn">Kuala Lumpur Monsoon Activity Centre.</div>
-            <div class="tab-arrow"></div>
+        <div class="top-tab-wrapper tab-kl" id="tabKL" title="Toggle Kuala Lumpur Monsoon Activity Centre">
+            <div class="top-tab-btn" style="border-left: none;">Kuala Lumpur Monsoon Activity Centre.</div>
+            <div class="tab-arrow" style="left: 30%;"></div>
         </div>
     </div>
 
@@ -367,7 +387,8 @@
         const authMessage = document.getElementById('auth-message');
         const authOverlay = document.getElementById('auth-overlay');
         const userPanel = document.getElementById('user-panel');
-        const sideTabs = document.getElementById('side-tabs');
+        const topTabs = document.getElementById('top-tabs');
+        const btnHomeNav = document.getElementById('btn-home-nav');
         const userEmailDisplay = document.getElementById('user-email-display');
         const btnAppLogout = document.getElementById('btn-app-logout');
 
@@ -422,7 +443,7 @@
             if (user && user.emailVerified) {
                 authOverlay.style.display = 'none';
                 userPanel.style.display = 'flex';   
-                sideTabs.style.display = 'flex'; // Show tabs upon login
+                topTabs.style.display = 'flex'; // Show tabs upon login
                 userEmailDisplay.innerText = user.email;
                 initializeMap();
                 startIdleTimer(); 
@@ -433,7 +454,8 @@
             } else {
                 authOverlay.style.display = 'flex';
                 userPanel.style.display = 'none';   
-                sideTabs.style.display = 'none'; // Hide tabs
+                topTabs.style.display = 'none'; // Hide tabs
+                btnHomeNav.style.display = 'none';
                 clearTimers(); 
             }
         });
@@ -508,16 +530,21 @@
             document.getElementById(targetMapId).style.display = 'block';
             activeMapId = targetMapId;
 
-            // Load and resize specific alternative maps
-            if (targetMapId === 'map-climate' || targetMapId === 'map-kl') {
+            // Handle UI changes based on map status
+            if (targetMapId === 'map') {
+                btnHomeNav.style.display = 'none';
+            } else {
+                btnHomeNav.style.display = 'block';
                 initAlternativeMaps();
                 if (targetMapId === 'map-climate') mapClimate.invalidateSize();
                 if (targetMapId === 'map-kl') mapKL.invalidateSize();
             }
         }
 
+        // Event Listeners for Navigating Maps
         document.getElementById('tabClimate').addEventListener('click', () => toggleMap('map-climate'));
         document.getElementById('tabKL').addEventListener('click', () => toggleMap('map-kl'));
+        document.getElementById('btn-home-nav').addEventListener('click', () => toggleMap('map'));
 
         function initializeMap() {
             if (isMapLoaded) return; 
@@ -846,4 +873,3 @@
     </script>
 </body>
 </html>
-```<FollowUp>
