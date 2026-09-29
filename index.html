@@ -443,7 +443,7 @@
             background: #95a5a6; 
         }
 
-        /* Monthly Selection Block Styles */
+        /* Monthly/Daily Selection Block Styles */
         .monthly-control-box {
             background: #f4f6f8;
             padding: 12px;
@@ -901,7 +901,7 @@
                     </div>
                     <div id="content-5" class="accordion-content">
                         <div class="monthly-control-box">
-                            <strong>1) Monthly</strong>
+                            <strong>1) Daily</strong>
                             <select id="filter-month-simple">
                                 <option value="01">JAN</option>
                                 <option value="02">FEB</option>
@@ -925,7 +925,7 @@
             };
             accordionControl.addTo(map);
 
-            // Fetch and Process Custom Monthly Rainfall Data (Accordion 5)
+            // Fetch and Process Custom Daily Rainfall Data (Accordion 5)
             let customDataLayer = L.layerGroup();
             
             document.getElementById('btnLoadMonthly').addEventListener('click', function() {
@@ -958,14 +958,21 @@
                                 stationGroups[stnName] = { 
                                     lat: parseFloat(row.LATITUDE), 
                                     lon: parseFloat(row.LONGITUDE), 
-                                    readings: [], labels: [], sum: 0 
+                                    dailyData: {}, sum: 0 
                                 };
                             }
                             
+                            // Group and sum data by day of the month
                             let rainfall = parseFloat(row.RAIN) || 0;
-                            stationGroups[stnName].sum += rainfall;
-                            stationGroups[stnName].readings.push(rainfall);
-                            stationGroups[stnName].labels.push(`Day ${row.DAY} Hr ${row.HOUR}`); 
+                            let day = parseInt(row.DAY);
+                            
+                            if (!isNaN(day)) {
+                                if (!stationGroups[stnName].dailyData[day]) {
+                                    stationGroups[stnName].dailyData[day] = 0;
+                                }
+                                stationGroups[stnName].dailyData[day] += rainfall;
+                                stationGroups[stnName].sum += rainfall;
+                            }
                         });
 
                         let stationCount = Object.keys(stationGroups).length;
@@ -996,14 +1003,26 @@
                             marker.bindTooltip(stnName, { permanent: true, direction: 'right', className: 'station-label', offset: [8, 0] });
                             
                             marker.on('popupopen', function() {
+                                // Prepare arrays for the chart from aggregated daily data
+                                let labels = [];
+                                let readings = [];
+                                
+                                // Sort days numerically to ensure the x-axis is sequential
+                                let days = Object.keys(stn.dailyData).map(Number).sort((a, b) => a - b);
+                                
+                                days.forEach(d => {
+                                    labels.push(d.toString());
+                                    readings.push(stn.dailyData[d]);
+                                });
+
                                 var ctx = document.getElementById(canvasId).getContext('2d');
                                 new Chart(ctx, {
-                                    type: 'line',
+                                    type: 'bar', // Changed from line to bar chart
                                     data: {
-                                        labels: stn.labels,
+                                        labels: labels, // Now outputs just the day number (1, 2, 3...)
                                         datasets: [{
                                             label: 'Rainfall (mm)',
-                                            data: stn.readings,
+                                            data: readings,
                                             backgroundColor: 'rgba(255, 105, 180, 0.6)', // Pink Fill
                                             borderColor: 'rgba(255, 20, 147, 1)', // Deep Pink border
                                             borderWidth: 1
