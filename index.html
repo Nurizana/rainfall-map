@@ -19,11 +19,18 @@
             background-color: #141923;
         }
         
-        html, body { height: 100%; width: 100%; }
+        html, body { 
+            height: 100%; 
+            width: 100%; 
+        }
 
         /* Maps now stretch completely to the top, under the transparent ribbon */
         #map, #map-climate, #map-kl { 
-            height: 100%; width: 100%; position: absolute; top: 0; left: 0; 
+            height: 100%; 
+            width: 100%; 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
         }
         
         #map { z-index: 1; }
@@ -39,67 +46,164 @@
         }
         
         .legend {
-            background: white; padding: 10px 15px; border-radius: 5px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.2); color: #333; font-family: Arial, sans-serif;
-            max-height: 400px; overflow-y: auto;
+            background: white; 
+            padding: 10px 15px; 
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2); 
+            color: #333; 
+            font-family: Arial, sans-serif;
+            max-height: 400px; 
+            overflow-y: auto;
         }
-        .legend-item { display: flex; align-items: center; margin-bottom: 4px; min-height: 25px; }
-        .legend-circle-container { width: 60px; display: flex; justify-content: center; align-items: center; margin-right: 10px; }
-        .legend-circle { border-radius: 50%; border: 1px solid #000; }
+        
+        .legend-item { 
+            display: flex; 
+            align-items: center; 
+            margin-bottom: 4px; 
+            min-height: 25px; 
+        }
+        
+        .legend-circle-container { 
+            width: 60px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            margin-right: 10px; 
+        }
+        
+        .legend-circle { 
+            border-radius: 50%; 
+            border: 1px solid #000; 
+        }
         
         .custom-control-panel {
-            background: white; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            width: 240px; font-family: Arial, sans-serif; font-size: 13px;
+            background: white; 
+            border-radius: 5px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            width: 320px; /* Increased to accommodate grid layout */
+            font-family: Arial, sans-serif; 
+            font-size: 13px;
         }
+        
         .accordion-header {
-            background: #3182bd; color: white; padding: 10px; cursor: pointer; font-weight: bold;
-            display: flex; justify-content: space-between; align-items: center; user-select: none;
+            background: #3182bd; 
+            color: white; 
+            padding: 10px; 
+            cursor: pointer; 
+            font-weight: bold;
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            user-select: none;
         }
-        .accordion-header:first-child { border-top-left-radius: 5px; border-top-right-radius: 5px; }
-        .accordion-header:last-of-type { border-bottom-left-radius: 5px; border-bottom-right-radius: 5px; }
-        .accordion-header.active:last-of-type { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+        
+        .accordion-header:first-child { 
+            border-top-left-radius: 5px; 
+            border-top-right-radius: 5px; 
+        }
+        
+        .accordion-header:last-of-type { 
+            border-bottom-left-radius: 5px; 
+            border-bottom-right-radius: 5px; 
+        }
+        
+        .accordion-header.active:last-of-type { 
+            border-bottom-left-radius: 0; 
+            border-bottom-right-radius: 0; 
+        }
+        
         .accordion-content {
-            display: none; padding: 10px; max-height: 250px; overflow-y: auto; background: white;
-            border-left: 1px solid #ccc; border-right: 1px solid #ccc; border-bottom: 1px solid #ccc;
+            display: none; 
+            padding: 10px; 
+            max-height: 350px; 
+            overflow-y: auto; 
+            background: white;
+            border-left: 1px solid #ccc; 
+            border-right: 1px solid #ccc; 
+            border-bottom: 1px solid #ccc;
         }
-        .accordion-content.show { display: block; }
-        .layer-item { margin-bottom: 8px; display: flex; align-items: center; cursor: pointer; }
-        .layer-item input { margin-right: 8px; cursor: pointer; }
+        
+        .accordion-content.show { 
+            display: block; 
+        }
+        
+        .layer-item { 
+            margin-bottom: 8px; 
+            display: flex; 
+            align-items: center; 
+            cursor: pointer; 
+        }
+        
+        .layer-item input { 
+            margin-right: 8px; 
+            cursor: pointer; 
+        }
         
         .triangle { 
             transition: transform 0.3s ease; 
             font-size: 16px; 
             color: white; 
         }
-        .triangle.open { transform: rotate(180deg); }
+        
+        .triangle.open { 
+            transform: rotate(180deg); 
+        }
 
         .station-label {
-            color: yellow; font-weight: bold; font-size: 12px;
-            background: transparent; border: none; box-shadow: none; text-shadow: 1px 1px 2px black; 
+            color: yellow; 
+            font-weight: bold; 
+            font-size: 12px;
+            background: transparent; 
+            border: none; 
+            box-shadow: none; 
+            text-shadow: 1px 1px 2px black; 
         }
+        
         .contour-label {
-            color: #222; font-weight: bold; font-size: 11px;
-            background: transparent; border: none; box-shadow: none; text-shadow: 1px 1px 2px white; 
+            color: #222; 
+            font-weight: bold; 
+            font-size: 11px;
+            background: transparent; 
+            border: none; 
+            box-shadow: none; 
+            text-shadow: 1px 1px 2px white; 
         }
-        .leaflet-tooltip-left.station-label::before, .leaflet-tooltip-right.station-label::before,
-        .leaflet-tooltip-top.contour-label::before, .leaflet-tooltip-bottom.contour-label::before,
-        .leaflet-tooltip-center.contour-label::before { display: none; }
+        
+        .leaflet-tooltip-left.station-label::before, 
+        .leaflet-tooltip-right.station-label::before,
+        .leaflet-tooltip-top.contour-label::before, 
+        .leaflet-tooltip-bottom.contour-label::before,
+        .leaflet-tooltip-center.contour-label::before { 
+            display: none; 
+        }
 
         /* Security Overlay Styling */
         #auth-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 9999; display: flex; flex-direction: column;
-            justify-content: center; align-items: center; color: white; font-family: Arial, sans-serif;
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            z-index: 9999; 
+            display: flex; 
+            flex-direction: column;
+            justify-content: center; 
+            align-items: center; 
+            color: white; 
+            font-family: Arial, sans-serif;
             background-color: #141923;
             overflow: hidden; 
         }
         
         #bg-slider {
-            position: absolute; top: 0; left: 0; 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
             height: 100%;
             display: flex;
             z-index: 1;
         }
+        
         .bg-slide {
             width: 100vw; 
             flex-shrink: 0;
@@ -107,51 +211,109 @@
             background-size: cover;
             background-position: center;
         }
+        
         .bg-overlay-gradient {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
             background: linear-gradient(rgba(20, 25, 35, 0.8), rgba(20, 25, 35, 0.8));
             z-index: 2;
         }
 
         .auth-box {
             background: rgba(40, 44, 52, 0.95);
-            padding: 35px; border-radius: 10px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.7); text-align: center; 
-            width: 90%; max-width: 350px; 
+            padding: 35px; 
+            border-radius: 10px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.7); 
+            text-align: center; 
+            width: 90%; 
+            max-width: 350px; 
             border: 1px solid rgba(255, 255, 255, 0.1);
             z-index: 3;
         }
+        
         .auth-box h2 {
-            margin-top: 0; margin-bottom: 25px;
-            font-size: 22px; letter-spacing: 1px;
+            margin-top: 0; 
+            margin-bottom: 25px;
+            font-size: 22px; 
+            letter-spacing: 1px;
         }
+        
         .auth-box input, .auth-box button {
-            width: 100%; padding: 12px; margin: 8px 0; border-radius: 5px; border: none; box-sizing: border-box;
+            width: 100%; 
+            padding: 12px; 
+            margin: 8px 0; 
+            border-radius: 5px; 
+            border: none; 
+            box-sizing: border-box;
         }
+        
         .auth-box input {
             background: #1e1e1e;
             color: #fff;
             border: 1px solid #444;
         }
+        
         .auth-box input:focus {
             outline: none;
             border-color: #3182bd;
         }
-        .auth-box button { background: #3182bd; color: white; font-weight: bold; cursor: pointer; transition: background 0.3s; }
-        .auth-box button:hover { background: #6baed6; }
-        #auth-message { color: #f1c40f; font-size: 13px; margin-top: 15px; font-weight: bold; }
+        
+        .auth-box button { 
+            background: #3182bd; 
+            color: white; 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: background 0.3s; 
+        }
+        
+        .auth-box button:hover { 
+            background: #6baed6; 
+        }
+        
+        #auth-message { 
+            color: #f1c40f; 
+            font-size: 13px; 
+            margin-top: 15px; 
+            font-weight: bold; 
+        }
 
         #timeout-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.85); z-index: 10000; display: none; flex-direction: column;
-            justify-content: center; align-items: center; color: white; font-family: Arial, sans-serif;
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85); 
+            z-index: 10000; 
+            display: none; 
+            flex-direction: column;
+            justify-content: center; 
+            align-items: center; 
+            color: white; 
+            font-family: Arial, sans-serif;
         }
+        
         .timeout-box {
-            background: #e74c3c; padding: 30px; border-radius: 8px;
-            text-align: center; width: 90%; max-width: 400px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            background: #e74c3c; 
+            padding: 30px; 
+            border-radius: 8px;
+            text-align: center; 
+            width: 90%; 
+            max-width: 400px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         }
+        
         .timeout-box h2 { margin-top: 0; }
-        #countdown-timer { font-size: 48px; font-weight: bold; margin: 20px 0; color: yellow; }
+        
+        #countdown-timer { 
+            font-size: 48px; 
+            font-weight: bold; 
+            margin: 20px 0; 
+            color: yellow; 
+        }
 
 
         /* ---------------------------------------------------
@@ -200,8 +362,16 @@
             box-shadow: 2px -2px 5px rgba(0,0,0,0.3);
         }
         
-        .top-tab-btn:hover { background: rgba(58, 63, 75, 1); color: #fff; }
-        .top-tab-btn.active { background: #3182bd; color: white; border-color: #3182bd; }
+        .top-tab-btn:hover { 
+            background: rgba(58, 63, 75, 1); 
+            color: #fff; 
+        }
+        
+        .top-tab-btn.active { 
+            background: #3182bd; 
+            color: white; 
+            border-color: #3182bd; 
+        }
 
         .inline-arrow {
             display: inline-block;
@@ -231,24 +401,77 @@
         }
 
         #btn-app-logout {
-            background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold;
+            background: #e74c3c; 
+            color: white; 
+            border: none; 
+            padding: 6px 12px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-weight: bold;
             box-shadow: 0 2px 5px rgba(0,0,0,0.5);
             text-shadow: none; /* Keep button text flat */
         }
-        #btn-app-logout:hover { background: #c0392b; }
+        
+        #btn-app-logout:hover { 
+            background: #c0392b; 
+        }
         
         /* --------------------------------------------------- */
 
 
-        .leaflet-top.leaflet-right { margin-top: 60px; } /* Ensures map controls clear the ribbon */
+        .leaflet-top.leaflet-right { 
+            margin-top: 60px; 
+        } /* Ensures map controls clear the ribbon */
         
         .btn-animate {
-            width: 100%; padding: 8px; background: #e74c3c; color: white; border: none; 
-            border-radius: 4px; font-weight: bold; cursor: pointer; margin-bottom: 5px;
+            width: 100%; 
+            padding: 8px; 
+            background: #e74c3c; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            margin-bottom: 5px;
         }
-        .btn-animate:hover { background: #c0392b; }
-        .btn-animate-stop { background: #7f8c8d; }
-        .btn-animate-stop:hover { background: #95a5a6; }
+        
+        .btn-animate:hover { 
+            background: #c0392b; 
+        }
+        
+        .btn-animate-stop { 
+            background: #7f8c8d; 
+        }
+        
+        .btn-animate-stop:hover { 
+            background: #95a5a6; 
+        }
+
+        /* --- Filter Grid Styles for Rainfall Data --- */
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 10px;
+            background: #f4f6f8;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .filter-item {
+            display: flex;
+            flex-direction: column;
+            font-size: 11px;
+            font-weight: bold;
+            color: #333;
+        }
+        .filter-item select {
+            margin-top: 3px;
+            padding: 4px;
+            border-radius: 3px;
+            border: 1px solid #ccc;
+            font-size: 11px;
+        }
 
         @media (max-width: 950px) {
             .top-tab-btn { padding: 0 8px; font-size: 11px; }
@@ -262,6 +485,7 @@
             .legend { font-size: 11px; max-height: 200px; padding: 8px; }
             .auth-box { padding: 25px; }
             .auth-box h2 { font-size: 18px; }
+            .filter-grid { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
@@ -325,6 +549,7 @@
     <script src="https://unpkg.com/shpjs@latest/dist/shp.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
         // --- DYNAMIC BACKGROUND INFINITE SWIPE ANIMATION ---
@@ -676,10 +901,192 @@
                         <button id="btnStopAnim" class="btn-animate btn-animate-stop" style="display:none;">Stop / Clear</button>
                         <div id="anim-year-display" style="text-align:center; font-weight:bold; font-size:18px; margin-top:10px; color:#3182bd;">Year: -</div>
                     </div>
+
+                    <div class="accordion-header" style="border-top: 1px solid #fff;" onclick="window.toggleAccordion('content-5', 'icon-5', this)">
+                        <span>5) Rainfall Data</span><span id="icon-5" class="triangle">▼</span>
+                    </div>
+                    <div id="content-5" class="accordion-content">
+                        <div class="filter-grid">
+                            <div class="filter-item">
+                                <label>Years</label>
+                                <select id="filter-year">
+                                    <option value="2024">2024</option>
+                                </select>
+                            </div>
+                            <div class="filter-item">
+                                <label>Month</label>
+                                <select id="filter-month">
+                                    <option value="01">Jan (01)</option>
+                                    <option value="02">Feb (02)</option>
+                                    <option value="03">Mar (03)</option>
+                                    <option value="04">Apr (04)</option>
+                                    <option value="05">May (05)</option>
+                                    <option value="06">Jun (06)</option>
+                                    <option value="07">Jul (07)</option>
+                                    <option value="08">Aug (08)</option>
+                                    <option value="09">Sep (09)</option>
+                                    <option value="10">Oct (10)</option>
+                                    <option value="11">Nov (11)</option>
+                                    <option value="12">Dec (12)</option>
+                                </select>
+                            </div>
+                            <div class="filter-item">
+                                <label>Date</label>
+                                <select id="filter-date">
+                                    <option value="ALL">All Dates</option>
+                                </select>
+                            </div>
+                            <div class="filter-item">
+                                <label>Aggregate</label>
+                                <select id="filter-aggregate">
+                                    <option value="hourly/day">hourly/day</option>
+                                    <option value="3-hourly/month">3-hourly/month</option>
+                                    <option value="6-hourly/month">6-hourly/month</option>
+                                    <option value="day/month">day/month</option>
+                                    <option value="month/year">month/year</option>
+                                </select>
+                            </div>
+                            <div class="filter-item">
+                                <label>Parameter</label>
+                                <select id="filter-parameter">
+                                    <option value="RAIN">Sum of Rainfall</option>
+                                </select>
+                            </div>
+                            <div class="filter-item">
+                                <label>Chart Type</label>
+                                <select id="filter-chart">
+                                    <option value="line">Line</option>
+                                    <option value="bar">Bar</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button id="btnLoadRainData" class="btn-animate" style="background:#27ae60;">Load Data</button>
+                        <div id="data-status" style="font-size:11px; text-align:center; color:#e74c3c; margin-top:5px;"></div>
+                    </div>
                 `;
                 return div;
             };
             accordionControl.addTo(map);
+
+            // Populate Date Dropdown based on month
+            const filterMonth = document.getElementById('filter-month');
+            const filterDate = document.getElementById('filter-date');
+            
+            function populateDates() {
+                filterDate.innerHTML = '<option value="ALL">All Dates</option>';
+                for(let i = 1; i <= 31; i++) {
+                    filterDate.innerHTML += `<option value="${i}">${i}</option>`;
+                }
+            }
+            populateDates();
+            filterMonth.addEventListener('change', populateDates);
+
+            // Fetch and Process Custom Rainfall Data (Accordion 5)
+            let customDataLayer = L.layerGroup();
+            
+            document.getElementById('btnLoadRainData').addEventListener('click', function() {
+                const year = document.getElementById('filter-year').value;
+                const month = document.getElementById('filter-month').value;
+                const selectedDate = document.getElementById('filter-date').value;
+                const chartType = document.getElementById('filter-chart').value;
+                
+                const statusLabel = document.getElementById('data-status');
+                statusLabel.innerText = "Fetching Data...";
+                statusLabel.style.color = "#f39c12";
+
+                const githubRawUrl = `https://raw.githubusercontent.com/Nurizana/rainfall-map/main/Data1/Hourly_PMSS_${year}${month}_WCoordinate.csv`;
+
+                Papa.parse(githubRawUrl, {
+                    download: true, 
+                    header: true, 
+                    dynamicTyping: true, 
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        map.removeLayer(customDataLayer);
+                        customDataLayer = L.layerGroup();
+                        
+                        var data = results.data;
+                        var stationGroups = {};
+
+                        data.forEach(row => {
+                            if (!row.LATITUDE || !row.LONGITUDE) return;
+                            if (selectedDate !== "ALL" && row.DAY !== parseInt(selectedDate)) return;
+
+                            let stnName = row['STATION NAME'] || row['WMOINDEX'];
+                            if (!stationGroups[stnName]) {
+                                stationGroups[stnName] = { 
+                                    lat: parseFloat(row.LATITUDE), 
+                                    lon: parseFloat(row.LONGITUDE), 
+                                    readings: [], labels: [], sum: 0 
+                                };
+                            }
+                            
+                            let rainfall = parseFloat(row.RAIN) || 0;
+                            stationGroups[stnName].sum += rainfall;
+                            stationGroups[stnName].readings.push(rainfall);
+                            stationGroups[stnName].labels.push(`Day ${row.DAY} Hr ${row.HOUR}`); 
+                        });
+
+                        let stationCount = Object.keys(stationGroups).length;
+                        if(stationCount === 0) {
+                            statusLabel.innerText = "No data found for this selection.";
+                            statusLabel.style.color = "#e74c3c";
+                            return;
+                        }
+
+                        Object.keys(stationGroups).forEach((stnName, idx) => {
+                            let stn = stationGroups[stnName];
+                            
+                            var marker = L.circleMarker([stn.lat, stn.lon], {
+                                radius: 8, fillColor: '#2ecc71', color: "#000", weight: 1, opacity: 1, fillOpacity: 0.9 
+                            });
+                            
+                            let canvasId = 'chart-' + idx;
+                            let popupContent = `
+                                <div style="width:250px;">
+                                    <b>${stnName}</b><br/>
+                                    Total Rain: ${stn.sum.toFixed(2)} mm<br/>
+                                    <canvas id="${canvasId}" width="250" height="150"></canvas>
+                                </div>
+                            `;
+                            
+                            marker.bindPopup(popupContent);
+                            marker.bindTooltip(stnName, { permanent: true, direction: 'right', className: 'station-label', offset: [8, 0] });
+                            
+                            marker.on('popupopen', function() {
+                                var ctx = document.getElementById(canvasId).getContext('2d');
+                                new Chart(ctx, {
+                                    type: chartType,
+                                    data: {
+                                        labels: stn.labels,
+                                        datasets: [{
+                                            label: 'Rainfall (mm)',
+                                            data: stn.readings,
+                                            backgroundColor: 'rgba(52, 152, 219, 0.6)',
+                                            borderColor: 'rgba(41, 128, 185, 1)',
+                                            borderWidth: 1
+                                        }]
+                                    },
+                                    options: {
+                                        scales: { y: { beginAtZero: true } }
+                                    }
+                                });
+                            });
+
+                            customDataLayer.addLayer(marker);
+                        });
+
+                        customDataLayer.addTo(map);
+                        statusLabel.innerText = `Loaded ${stationCount} stations successfully.`;
+                        statusLabel.style.color = "#27ae60";
+                    },
+                    error: function(err) {
+                        statusLabel.innerText = "Error loading CSV. Check repo/file path.";
+                        statusLabel.style.color = "#e74c3c";
+                        console.error(err);
+                    }
+                });
+            });
 
             Papa.parse("data.csv", {
                 download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
