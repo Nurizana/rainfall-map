@@ -80,7 +80,7 @@
             background: white; 
             border-radius: 5px; 
             box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            width: 320px; /* Increased to accommodate grid layout */
+            width: 320px; 
             font-family: Arial, sans-serif; 
             font-size: 13px;
         }
@@ -315,7 +315,6 @@
             color: yellow; 
         }
 
-
         /* ---------------------------------------------------
            NEW LAYOUT: Transparent Overlay & Top Right Panel 
            --------------------------------------------------- */
@@ -325,26 +324,26 @@
             top: 0;
             left: 0;
             width: 100%;
-            height: 52px; /* Fixed height for the ribbon */
-            background: transparent; /* Makes the top ribbon background transparent */
+            height: 52px; 
+            background: transparent; 
             border-bottom: 2px solid #3182bd;
-            display: none; /* Block when visible */
+            display: none; 
             z-index: 2000;
-            pointer-events: none; /* Clicks pass through to the map underneath */
+            pointer-events: none; 
         }
 
         #top-tabs {
             position: absolute;
-            bottom: 0; /* Tabs sit flush on the blue line */
-            left: 55px; /* Safely clears leaflet zoom controls */
+            bottom: 0; 
+            left: 55px; 
             display: flex;
             flex-direction: row;
             gap: 5px;
-            pointer-events: auto; /* Re-enables clicking on tabs */
+            pointer-events: auto; 
         }
         
         .top-tab-btn {
-            background: rgba(40, 44, 52, 0.9); /* Slight tint for text readability against map */
+            background: rgba(40, 44, 52, 0.9); 
             color: #cbd5e1;
             border: 1px solid #444;
             border-bottom: none;
@@ -383,11 +382,10 @@
             margin-left: 10px; 
         }
 
-        /* User Panel strictly locked to Most Top Right */
         #user-panel {
             position: absolute;
             right: 20px;
-            bottom: 8px; /* Centers vertically within the 52px ribbon */
+            bottom: 8px; 
             display: flex;
             align-items: center;
             gap: 15px;
@@ -395,8 +393,7 @@
             font-family: Arial, sans-serif;
             font-size: 14px;
             font-weight: bold;
-            pointer-events: auto; /* Re-enables clicking */
-            /* Text shadow ensures email is readable even if base map is pure white */
+            pointer-events: auto; 
             text-shadow: 1px 1px 3px rgba(0,0,0,0.9), -1px -1px 3px rgba(0,0,0,0.9), 1px -1px 3px rgba(0,0,0,0.9), -1px 1px 3px rgba(0,0,0,0.9);
         }
 
@@ -409,17 +406,15 @@
             cursor: pointer; 
             font-weight: bold;
             box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-            text-shadow: none; /* Keep button text flat */
+            text-shadow: none; 
         }
         
         #btn-app-logout:hover { 
             background: #c0392b; 
         }
-        
+
         /* --------------------------------------------------- */
 
-
-        /* FIX: Ensure ALL top map controls (including left side zoom) clear the ribbon */
         .leaflet-top { 
             margin-top: 60px; 
         } 
@@ -448,30 +443,29 @@
             background: #95a5a6; 
         }
 
-        /* --- Filter Grid Styles for Rainfall Data --- */
-        .filter-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            margin-bottom: 10px;
+        /* Monthly Selection Block Styles */
+        .monthly-control-box {
             background: #f4f6f8;
-            padding: 10px;
+            padding: 12px;
             border-radius: 5px;
             border: 1px solid #ddd;
+            margin-bottom: 10px;
         }
-        .filter-item {
-            display: flex;
-            flex-direction: column;
-            font-size: 11px;
-            font-weight: bold;
+        
+        .monthly-control-box strong {
+            display: block;
+            margin-bottom: 8px;
             color: #333;
+            font-size: 13px;
         }
-        .filter-item select {
-            margin-top: 3px;
-            padding: 4px;
-            border-radius: 3px;
+
+        .monthly-control-box select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border-radius: 4px;
             border: 1px solid #ccc;
-            font-size: 11px;
+            font-size: 12px;
         }
 
         @media (max-width: 950px) {
@@ -481,12 +475,11 @@
         @media (max-width: 700px) {
             #top-tabs { left: 45px; }
             .top-tab-btn { height: 32px; font-size: 10px; }
-            #user-email-display { display: none; } /* Hides email on very small screens to fit Tabs + Logout securely */
+            #user-email-display { display: none; } 
             .custom-control-panel { width: 200px; font-size: 12px; }
             .legend { font-size: 11px; max-height: 200px; padding: 8px; }
             .auth-box { padding: 25px; }
             .auth-box h2 { font-size: 18px; }
-            .filter-grid { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
@@ -904,64 +897,27 @@
                     </div>
 
                     <div class="accordion-header" style="border-top: 1px solid #fff;" onclick="window.toggleAccordion('content-5', 'icon-5', this)">
-                        <span>5) Rainfall Data</span><span id="icon-5" class="triangle">▼</span>
+                        <span>5) Sum of Rainfall</span><span id="icon-5" class="triangle">▼</span>
                     </div>
                     <div id="content-5" class="accordion-content">
-                        <div class="filter-grid">
-                            <div class="filter-item">
-                                <label>Years</label>
-                                <select id="filter-year">
-                                    <option value="2024">2024</option>
-                                </select>
-                            </div>
-                            <div class="filter-item">
-                                <label>Month</label>
-                                <select id="filter-month">
-                                    <option value="01">Jan (01)</option>
-                                    <option value="02">Feb (02)</option>
-                                    <option value="03">Mar (03)</option>
-                                    <option value="04">Apr (04)</option>
-                                    <option value="05">May (05)</option>
-                                    <option value="06">Jun (06)</option>
-                                    <option value="07">Jul (07)</option>
-                                    <option value="08">Aug (08)</option>
-                                    <option value="09">Sep (09)</option>
-                                    <option value="10">Oct (10)</option>
-                                    <option value="11">Nov (11)</option>
-                                    <option value="12">Dec (12)</option>
-                                </select>
-                            </div>
-                            <div class="filter-item">
-                                <label>Date</label>
-                                <select id="filter-date">
-                                    <option value="ALL">All Dates</option>
-                                </select>
-                            </div>
-                            <div class="filter-item">
-                                <label>Aggregate</label>
-                                <select id="filter-aggregate">
-                                    <option value="hourly/day">hourly/day</option>
-                                    <option value="3-hourly/month">3-hourly/month</option>
-                                    <option value="6-hourly/month">6-hourly/month</option>
-                                    <option value="day/month">day/month</option>
-                                    <option value="month/year">month/year</option>
-                                </select>
-                            </div>
-                            <div class="filter-item">
-                                <label>Parameter</label>
-                                <select id="filter-parameter">
-                                    <option value="RAIN">Sum of Rainfall</option>
-                                </select>
-                            </div>
-                            <div class="filter-item">
-                                <label>Chart Type</label>
-                                <select id="filter-chart">
-                                    <option value="line">Line</option>
-                                    <option value="bar">Bar</option>
-                                </select>
-                            </div>
+                        <div class="monthly-control-box">
+                            <strong>1) Monthly</strong>
+                            <select id="filter-month-simple">
+                                <option value="01">JAN</option>
+                                <option value="02">FEB</option>
+                                <option value="03">MAR</option>
+                                <option value="04">APR</option>
+                                <option value="05">MAY</option>
+                                <option value="06">JUN</option>
+                                <option value="07">JUL</option>
+                                <option value="08">AUG</option>
+                                <option value="09">SEP</option>
+                                <option value="10">OCT</option>
+                                <option value="11">NOV</option>
+                                <option value="12">DEC</option>
+                            </select>
+                            <button id="btnLoadMonthly" class="btn-animate" style="background:#e84393; margin-top: 5px;">Load Data</button>
                         </div>
-                        <button id="btnLoadRainData" class="btn-animate" style="background:#27ae60;">Load Data</button>
                         <div id="data-status" style="font-size:11px; text-align:center; color:#e74c3c; margin-top:5px;"></div>
                     </div>
                 `;
@@ -969,29 +925,14 @@
             };
             accordionControl.addTo(map);
 
-            // Populate Date Dropdown based on month
-            const filterMonth = document.getElementById('filter-month');
-            const filterDate = document.getElementById('filter-date');
-            
-            function populateDates() {
-                filterDate.innerHTML = '<option value="ALL">All Dates</option>';
-                for(let i = 1; i <= 31; i++) {
-                    filterDate.innerHTML += `<option value="${i}">${i}</option>`;
-                }
-            }
-            populateDates();
-            filterMonth.addEventListener('change', populateDates);
-
-            // Fetch and Process Custom Rainfall Data (Accordion 5)
+            // Fetch and Process Custom Monthly Rainfall Data (Accordion 5)
             let customDataLayer = L.layerGroup();
             
-            document.getElementById('btnLoadRainData').addEventListener('click', function() {
-                const year = document.getElementById('filter-year').value;
-                const month = document.getElementById('filter-month').value;
-                const selectedDate = document.getElementById('filter-date').value;
-                const chartType = document.getElementById('filter-chart').value;
-                
+            document.getElementById('btnLoadMonthly').addEventListener('click', function() {
+                const year = "2024"; // Defaulting to 2024 as the base year for the fetch string
+                const month = document.getElementById('filter-month-simple').value;
                 const statusLabel = document.getElementById('data-status');
+                
                 statusLabel.innerText = "Fetching Data...";
                 statusLabel.style.color = "#f39c12";
 
@@ -1011,7 +952,6 @@
 
                         data.forEach(row => {
                             if (!row.LATITUDE || !row.LONGITUDE) return;
-                            if (selectedDate !== "ALL" && row.DAY !== parseInt(selectedDate)) return;
 
                             let stnName = row['STATION NAME'] || row['WMOINDEX'];
                             if (!stationGroups[stnName]) {
@@ -1038,8 +978,9 @@
                         Object.keys(stationGroups).forEach((stnName, idx) => {
                             let stn = stationGroups[stnName];
                             
+                            // Pink Marker Implementation
                             var marker = L.circleMarker([stn.lat, stn.lon], {
-                                radius: 8, fillColor: '#2ecc71', color: "#000", weight: 1, opacity: 1, fillOpacity: 0.9 
+                                radius: 8, fillColor: '#ff69b4', color: "#000", weight: 1, opacity: 1, fillOpacity: 0.9 
                             });
                             
                             let canvasId = 'chart-' + idx;
@@ -1057,14 +998,14 @@
                             marker.on('popupopen', function() {
                                 var ctx = document.getElementById(canvasId).getContext('2d');
                                 new Chart(ctx, {
-                                    type: chartType,
+                                    type: 'line',
                                     data: {
                                         labels: stn.labels,
                                         datasets: [{
                                             label: 'Rainfall (mm)',
                                             data: stn.readings,
-                                            backgroundColor: 'rgba(52, 152, 219, 0.6)',
-                                            borderColor: 'rgba(41, 128, 185, 1)',
+                                            backgroundColor: 'rgba(255, 105, 180, 0.6)', // Pink Fill
+                                            borderColor: 'rgba(255, 20, 147, 1)', // Deep Pink border
                                             borderWidth: 1
                                         }]
                                     },
