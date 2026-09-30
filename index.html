@@ -468,6 +468,39 @@
             font-size: 12px;
         }
 
+        /* ---------------------------------------------------
+           NEW GRAPH GRID STYLES (For 2x3 Monthly Graphs)
+           --------------------------------------------------- */
+        .year-selector span {
+            margin-right: 12px;
+            font-size: 12px;
+            color: #555;
+            cursor: pointer;
+        }
+        .year-active {
+            font-weight: bold;
+            color: #2c3e50 !important;
+        }
+        .graph-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 65px);
+            gap: 5px;
+            margin-top: 8px;
+        }
+        .graph-box {
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 10px;
+            color: #999;
+            position: relative;
+            overflow: hidden;
+        }
+
         @media (max-width: 950px) {
             .top-tab-btn { padding: 0 8px; font-size: 11px; }
             #user-panel { gap: 10px; font-size: 12px; right: 10px; }
@@ -779,6 +812,22 @@
         document.getElementById('tabClimate').addEventListener('click', () => toggleMap('map-climate'));
         document.getElementById('tabKL').addEventListener('click', () => toggleMap('map-kl'));
 
+        // --- GRID GRAPH VARIABLES ---
+        let activeGridCharts = [null, null, null, null, null, null];
+        let gridStationNames = [null, null, null, null, null, null];
+
+        document.addEventListener('click', function(e) {
+            // Logic to clear the grid 
+            if(e.target && e.target.id === 'btnClearGrid') {
+                for(let i=0; i<6; i++) {
+                    if(activeGridCharts[i]) activeGridCharts[i].destroy();
+                    activeGridCharts[i] = null;
+                    gridStationNames[i] = null;
+                    document.getElementById('grid-box-'+i).innerHTML = 'Empty';
+                }
+            }
+        });
+
         function initializeMap() {
             if (isMapLoaded) return; 
             isMapLoaded = true;
@@ -828,7 +877,6 @@
                     }
                 }
                 
-                // Fallback added to prevent breaking layer styling if defective values are used here
                 if (isNaN(val) || val === -99.9 || val === -999 || val === -999.9) return 0;
                 return val; 
             }
@@ -909,6 +957,7 @@
                         <span>5) Sum of Rainfall</span><span id="icon-5" class="triangle">▼</span>
                     </div>
                     <div id="content-5" class="accordion-content">
+                        <div style="font-size: 11px; color: #e74c3c; margin-bottom: 8px; font-weight: bold;">Note: max is 6 stations</div>
                         <div class="monthly-control-box">
                             <strong>1) Daily</strong>
                             <select id="filter-month-simple">
@@ -927,6 +976,25 @@
                             </select>
                             <button id="btnLoadMonthly" class="btn-animate" style="background:#e84393; margin-top: 5px;">Load Data</button>
                         </div>
+
+                        <div class="monthly-control-box">
+                            <strong>2) Monthly</strong>
+                            <div class="year-selector" style="margin-bottom: 8px;">
+                                <span class="year-active">2024</span>
+                                <span>2025</span>
+                                <span>2026</span>
+                            </div>
+                            <div class="graph-grid" id="monthly-graph-grid">
+                                <div class="graph-box" id="grid-box-0">Empty</div>
+                                <div class="graph-box" id="grid-box-1">Empty</div>
+                                <div class="graph-box" id="grid-box-2">Empty</div>
+                                <div class="graph-box" id="grid-box-3">Empty</div>
+                                <div class="graph-box" id="grid-box-4">Empty</div>
+                                <div class="graph-box" id="grid-box-5">Empty</div>
+                            </div>
+                            <button id="btnClearGrid" class="btn-animate" style="background:#7f8c8d; margin-top: 8px; font-size: 11px; padding: 4px;">Clear Graphs</button>
+                        </div>
+                        
                         <div id="data-status" style="font-size:11px; text-align:center; color:#e74c3c; margin-top:5px;"></div>
                     </div>
                 `;
@@ -1057,6 +1125,54 @@
                                         scales: { y: { beginAtZero: true } }
                                     }
                                 });
+                            });
+
+                            // --- GRID GRAPH LOGIC: Trigger on marker click ---
+                            marker.on('click', function() {
+                                // Avoid adding duplicates
+                                if(gridStationNames.includes(stnName)) return;
+                                
+                                let emptyIndex = gridStationNames.findIndex(name => name === null);
+                                
+                                if(emptyIndex !== -1) {
+                                    gridStationNames[emptyIndex] = stnName;
+                                    let box = document.getElementById('grid-box-' + emptyIndex);
+                                    box.innerHTML = `<canvas id="canvas-grid-${emptyIndex}"></canvas>`;
+
+                                    let labels = [];
+                                    let readings = [];
+                                    let days = Object.keys(stn.dailyData).map(Number).sort((a, b) => a - b);
+                                    days.forEach(d => {
+                                        labels.push(d.toString());
+                                        readings.push(stn.dailyData[d]);
+                                    });
+
+                                    let ctxGrid = document.getElementById(`canvas-grid-${emptyIndex}`).getContext('2d');
+                                    activeGridCharts[emptyIndex] = new Chart(ctxGrid, {
+                                        type: 'bar',
+                                        data: {
+                                            labels: labels,
+                                            datasets: [{
+                                                data: readings,
+                                                backgroundColor: 'rgba(52, 152, 219, 0.8)'
+                                            }]
+                                        },
+                                        options: {
+                                            responsive: true,
+                                            maintainAspectRatio: false,
+                                            plugins: {
+                                                legend: { display: false },
+                                                title: { display: true, text: stnName, font: {size: 9}, padding: { top: 2, bottom: 2 } }
+                                            },
+                                            scales: {
+                                                x: { display: false },
+                                                y: { display: false }
+                                            }
+                                        }
+                                    });
+                                } else {
+                                    alert("Maximum of 6 stations can be displayed in the grid. Please clear the graphs to add more.");
+                                }
                             });
 
                             customDataLayer.addLayer(marker);
