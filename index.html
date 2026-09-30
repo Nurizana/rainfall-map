@@ -469,36 +469,67 @@
         }
 
         /* ---------------------------------------------------
-           NEW GRAPH GRID STYLES (For 2x3 Monthly Graphs)
+           BOTTOM GRAPH GRID STYLES (For 2x3 Monthly Graphs)
            --------------------------------------------------- */
-        .year-selector span {
-            margin-right: 12px;
-            font-size: 12px;
-            color: #555;
-            cursor: pointer;
+        #bottom-grid-container {
+            position: fixed;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(244, 246, 248, 0.95);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            z-index: 1000;
+            display: none; /* Hidden until a load button is clicked */
+            font-family: Arial, sans-serif;
         }
-        .year-active {
+
+        .grid-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 13px;
             font-weight: bold;
-            color: #2c3e50 !important;
+            color: #333;
         }
+
+        .btn-clear-grid {
+            background: #7f8c8d;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-clear-grid:hover {
+            background: #95a5a6;
+        }
+
         .graph-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(2, 65px);
-            gap: 5px;
-            margin-top: 8px;
+            grid-template-columns: repeat(3, 220px);
+            grid-template-rows: repeat(2, 140px);
+            gap: 8px;
         }
+
         .graph-box {
             background: #fff;
-            border: 1px solid #ccc;
-            border-radius: 3px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 10px;
+            font-size: 12px;
             color: #999;
             position: relative;
             overflow: hidden;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.05);
         }
 
         @media (max-width: 950px) {
@@ -513,6 +544,10 @@
             .legend { font-size: 11px; max-height: 200px; padding: 8px; }
             .auth-box { padding: 25px; }
             .auth-box h2 { font-size: 18px; }
+            .graph-grid {
+                grid-template-columns: repeat(2, 150px);
+                grid-template-rows: repeat(3, 100px);
+            }
         }
     </style>
 </head>
@@ -570,6 +605,22 @@
     <div id="map"></div>
     <div id="map-climate"></div>
     <div id="map-kl"></div>
+
+    <!-- Bottom 2x3 Grid Container (Moved out of control panel) -->
+    <div id="bottom-grid-container">
+        <div class="grid-header">
+            <span>Station Rainfall Accumulated Graphs</span>
+            <button id="btnClearGrid" class="btn-clear-grid">Clear Graphs</button>
+        </div>
+        <div class="graph-grid" id="monthly-graph-grid">
+            <div class="graph-box" id="grid-box-0">Empty</div>
+            <div class="graph-box" id="grid-box-1">Empty</div>
+            <div class="graph-box" id="grid-box-2">Empty</div>
+            <div class="graph-box" id="grid-box-3">Empty</div>
+            <div class="graph-box" id="grid-box-4">Empty</div>
+            <div class="graph-box" id="grid-box-5">Empty</div>
+        </div>
+    </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -974,25 +1025,17 @@
                                 <option value="11">NOV</option>
                                 <option value="12">DEC</option>
                             </select>
-                            <button id="btnLoadMonthly" class="btn-animate" style="background:#e84393; margin-top: 5px;">Load Data</button>
+                            <button id="btnLoadDaily" class="btn-animate" style="background:#e84393; margin-top: 5px;">Load Data</button>
                         </div>
 
                         <div class="monthly-control-box">
                             <strong>2) Monthly</strong>
-                            <div class="year-selector" style="margin-bottom: 8px;">
-                                <span class="year-active">2024</span>
-                                <span>2025</span>
-                                <span>2026</span>
-                            </div>
-                            <div class="graph-grid" id="monthly-graph-grid">
-                                <div class="graph-box" id="grid-box-0">Empty</div>
-                                <div class="graph-box" id="grid-box-1">Empty</div>
-                                <div class="graph-box" id="grid-box-2">Empty</div>
-                                <div class="graph-box" id="grid-box-3">Empty</div>
-                                <div class="graph-box" id="grid-box-4">Empty</div>
-                                <div class="graph-box" id="grid-box-5">Empty</div>
-                            </div>
-                            <button id="btnClearGrid" class="btn-animate" style="background:#7f8c8d; margin-top: 8px; font-size: 11px; padding: 4px;">Clear Graphs</button>
+                            <select id="filter-year-monthly">
+                                <option value="2024" style="font-weight:bold;">2024</option>
+                                <option value="2025">2025</option>
+                                <option value="2026">2026</option>
+                            </select>
+                            <button id="btnLoadMonthlySum" class="btn-animate" style="background:#8e44ad; margin-top: 5px;">Load Data</button>
                         </div>
                         
                         <div id="data-status" style="font-size:11px; text-align:center; color:#e74c3c; margin-top:5px;"></div>
@@ -1002,16 +1045,17 @@
             };
             accordionControl.addTo(map);
 
-            // Fetch and Process Custom Daily Rainfall Data (Accordion 5)
             let customDataLayer = L.layerGroup();
             
-            document.getElementById('btnLoadMonthly').addEventListener('click', function() {
-                const year = "2024"; // Defaulting to 2024 as the base year for the fetch string
+            // --- DAILY DATA LOGIC (PINK MARKERS) ---
+            document.getElementById('btnLoadDaily').addEventListener('click', function() {
+                const year = "2024"; // Defaulting to 2024 as the base year for the daily fetch string
                 const month = document.getElementById('filter-month-simple').value;
                 const statusLabel = document.getElementById('data-status');
                 
-                statusLabel.innerText = "Fetching Data...";
+                statusLabel.innerText = "Fetching Daily Data...";
                 statusLabel.style.color = "#f39c12";
+                document.getElementById('bottom-grid-container').style.display = 'block';
 
                 const githubRawUrl = `https://raw.githubusercontent.com/Nurizana/rainfall-map/main/Data1/Hourly_PMSS_${year}${month}_WCoordinate.csv`;
 
@@ -1039,8 +1083,6 @@
                                 };
                             }
                             
-                            // Group and sum data by day of the month
-                            // Defective values check: -99.9, -999, -999.9
                             let rawRain = parseFloat(row.RAIN);
                             let day = parseInt(row.DAY);
                             
@@ -1048,11 +1090,9 @@
                                 let isDefective = (rawRain === -99.9 || rawRain === -999 || rawRain === -999.9);
                                 let validRain = (!isNaN(rawRain) && !isDefective) ? rawRain : null;
                                 
-                                // Initialize day with valid data or null if defective/NaN
                                 if (stationGroups[stnName].dailyData[day] === undefined) {
                                     stationGroups[stnName].dailyData[day] = validRain;
                                 } else if (validRain !== null) {
-                                    // If we already have initialized day and the incoming value is valid, aggregate
                                     if (stationGroups[stnName].dailyData[day] === null) {
                                         stationGroups[stnName].dailyData[day] = validRain;
                                     } else {
@@ -1060,7 +1100,6 @@
                                     }
                                 }
 
-                                // Apply to total sum only if the read value is not defective
                                 if (validRain !== null) {
                                     stationGroups[stnName].sum += validRain;
                                 }
@@ -1077,7 +1116,6 @@
                         Object.keys(stationGroups).forEach((stnName, idx) => {
                             let stn = stationGroups[stnName];
                             
-                            // Pink Marker Implementation
                             var marker = L.circleMarker([stn.lat, stn.lon], {
                                 radius: 8, fillColor: '#ff69b4', color: "#000", weight: 1, opacity: 1, fillOpacity: 0.9 
                             });
@@ -1088,6 +1126,7 @@
                                     <b>${stnName}</b><br/>
                                     Total Rain: ${stn.sum.toFixed(2)} mm<br/>
                                     <canvas id="${canvasId}" width="250" height="150"></canvas>
+                                    <i>Click marker to pin to bottom grid</i>
                                 </div>
                             `;
                             
@@ -1095,43 +1134,34 @@
                             marker.bindTooltip(stnName, { permanent: true, direction: 'right', className: 'station-label', offset: [8, 0] });
                             
                             marker.on('popupopen', function() {
-                                // Prepare arrays for the chart from aggregated daily data
                                 let labels = [];
                                 let readings = [];
-                                
-                                // Sort days numerically to ensure the x-axis is sequential
                                 let days = Object.keys(stn.dailyData).map(Number).sort((a, b) => a - b);
                                 
                                 days.forEach(d => {
                                     labels.push(d.toString());
-                                    // Pushing a null value renders a gap on the chart instead of 0
                                     readings.push(stn.dailyData[d]);
                                 });
 
                                 var ctx = document.getElementById(canvasId).getContext('2d');
                                 new Chart(ctx, {
-                                    type: 'bar', // Changed from line to bar chart
+                                    type: 'bar',
                                     data: {
-                                        labels: labels, // Now outputs just the day number (1, 2, 3...)
+                                        labels: labels, 
                                         datasets: [{
                                             label: 'Rainfall (mm)',
                                             data: readings,
-                                            backgroundColor: 'rgba(255, 105, 180, 0.6)', // Pink Fill
-                                            borderColor: 'rgba(255, 20, 147, 1)', // Deep Pink border
+                                            backgroundColor: 'rgba(255, 105, 180, 0.6)', 
+                                            borderColor: 'rgba(255, 20, 147, 1)', 
                                             borderWidth: 1
                                         }]
                                     },
-                                    options: {
-                                        scales: { y: { beginAtZero: true } }
-                                    }
+                                    options: { scales: { y: { beginAtZero: true } } }
                                 });
                             });
 
-                            // --- GRID GRAPH LOGIC: Trigger on marker click ---
                             marker.on('click', function() {
-                                // Avoid adding duplicates
                                 if(gridStationNames.includes(stnName)) return;
-                                
                                 let emptyIndex = gridStationNames.findIndex(name => name === null);
                                 
                                 if(emptyIndex !== -1) {
@@ -1154,19 +1184,18 @@
                                             labels: labels,
                                             datasets: [{
                                                 data: readings,
-                                                backgroundColor: 'rgba(52, 152, 219, 0.8)'
+                                                backgroundColor: 'rgba(255, 105, 180, 0.8)' // Pink fill for daily grid
                                             }]
                                         },
                                         options: {
-                                            responsive: true,
-                                            maintainAspectRatio: false,
+                                            responsive: true, maintainAspectRatio: false,
                                             plugins: {
                                                 legend: { display: false },
-                                                title: { display: true, text: stnName, font: {size: 9}, padding: { top: 2, bottom: 2 } }
+                                                title: { display: true, text: stnName + ' (Daily)', font: {size: 11}, padding: { top: 2, bottom: 2 } }
                                             },
                                             scales: {
-                                                x: { display: false },
-                                                y: { display: false }
+                                                x: { ticks: { font: { size: 8 } } },
+                                                y: { beginAtZero: true, ticks: { font: { size: 8 } } }
                                             }
                                         }
                                     });
@@ -1187,6 +1216,144 @@
                         statusLabel.style.color = "#e74c3c";
                         console.error(err);
                     }
+                });
+            });
+
+            // --- MONTHLY DATA LOGIC (PURPLE MARKERS) ---
+            document.getElementById('btnLoadMonthlySum').addEventListener('click', function() {
+                const year = document.getElementById('filter-year-monthly').value;
+                const statusLabel = document.getElementById('data-status');
+                
+                statusLabel.innerText = "Fetching Monthly Data (this may take a moment)...";
+                statusLabel.style.color = "#f39c12";
+                
+                // Show bottom grid panel when interaction begins
+                document.getElementById('bottom-grid-container').style.display = 'block';
+
+                let fetchPromises = [];
+                // Loop 1 to 12 to pull all available months for the year
+                for (let i = 1; i <= 12; i++) {
+                    let monthStr = i.toString().padStart(2, '0');
+                    let url = `https://raw.githubusercontent.com/Nurizana/rainfall-map/main/Data1/Hourly_PMSS_${year}${monthStr}_WCoordinate.csv`;
+                    
+                    fetchPromises.push(new Promise((resolve) => {
+                        Papa.parse(url, {
+                            download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
+                            complete: function(results) { 
+                                resolve({monthIndex: i-1, data: results.data}); 
+                            },
+                            error: function(err) { 
+                                // Resolve empty array if a specific month file doesn't exist yet
+                                resolve({monthIndex: i-1, data: []}); 
+                            } 
+                        });
+                    }));
+                }
+
+                Promise.all(fetchPromises).then(results => {
+                    map.removeLayer(customDataLayer);
+                    customDataLayer = L.layerGroup();
+                    
+                    var stationGroups = {};
+
+                    // Aggregate all months 
+                    results.forEach(monthRes => {
+                        let mIndex = monthRes.monthIndex;
+                        monthRes.data.forEach(row => {
+                            if (!row.LATITUDE || !row.LONGITUDE) return;
+
+                            let stnName = row['STATION NAME'] || row['WMOINDEX'];
+                            if (!stationGroups[stnName]) {
+                                stationGroups[stnName] = { 
+                                    lat: parseFloat(row.LATITUDE), 
+                                    lon: parseFloat(row.LONGITUDE), 
+                                    monthlySums: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                                    totalSum: 0 
+                                };
+                            }
+                            
+                            let rawRain = parseFloat(row.RAIN);
+                            
+                            if (!isNaN(rawRain) && rawRain !== -99.9 && rawRain !== -999 && rawRain !== -999.9) {
+                                stationGroups[stnName].monthlySums[mIndex] += rawRain;
+                                stationGroups[stnName].totalSum += rawRain;
+                            }
+                        });
+                    });
+
+                    let stationCount = Object.keys(stationGroups).length;
+                    if(stationCount === 0) {
+                        statusLabel.innerText = "No data found for this year.";
+                        statusLabel.style.color = "#e74c3c";
+                        return;
+                    }
+
+                    Object.keys(stationGroups).forEach((stnName) => {
+                        let stn = stationGroups[stnName];
+                        
+                        // Purple Marker for Monthly Load Data
+                        var marker = L.circleMarker([stn.lat, stn.lon], {
+                            radius: 8, fillColor: '#8e44ad', color: "#000", weight: 1, opacity: 1, fillOpacity: 0.9 
+                        });
+                        
+                        let popupContent = `
+                            <div style="width:200px;">
+                                <b>${stnName}</b><br/>
+                                Yearly Total: ${stn.totalSum.toFixed(2)} mm<br/>
+                                <i>Click marker to pin monthly sums to bottom grid</i>
+                            </div>
+                        `;
+                        
+                        marker.bindPopup(popupContent);
+                        marker.bindTooltip(stnName, { permanent: true, direction: 'right', className: 'station-label', offset: [8, 0] });
+                        
+                        marker.on('click', function() {
+                            if(gridStationNames.includes(stnName)) return;
+                            
+                            let emptyIndex = gridStationNames.findIndex(name => name === null);
+                            
+                            if(emptyIndex !== -1) {
+                                gridStationNames[emptyIndex] = stnName;
+                                let box = document.getElementById('grid-box-' + emptyIndex);
+                                box.innerHTML = `<canvas id="canvas-grid-${emptyIndex}"></canvas>`;
+
+                                let labels = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+                                let readings = stn.monthlySums.map(v => v.toFixed(2));
+
+                                let ctxGrid = document.getElementById(`canvas-grid-${emptyIndex}`).getContext('2d');
+                                activeGridCharts[emptyIndex] = new Chart(ctxGrid, {
+                                    type: 'bar',
+                                    data: {
+                                        labels: labels,
+                                        datasets: [{
+                                            data: readings,
+                                            backgroundColor: 'rgba(142, 68, 173, 0.8)' // Purple fill for monthly grid
+                                        }]
+                                    },
+                                    options: {
+                                        responsive: true,
+                                        maintainAspectRatio: false,
+                                        plugins: {
+                                            legend: { display: false },
+                                            title: { display: true, text: stnName + ' (Monthly)', font: {size: 11}, padding: { top: 2, bottom: 2 } }
+                                        },
+                                        scales: {
+                                            x: { ticks: { font: { size: 8 } } },
+                                            y: { beginAtZero: true, ticks: { font: { size: 8 } } }
+                                        }
+                                    }
+                                });
+                            } else {
+                                alert("Maximum of 6 stations can be displayed in the grid. Please clear the graphs to add more.");
+                            }
+                        });
+
+                        customDataLayer.addLayer(marker);
+                    });
+
+                    customDataLayer.addTo(map);
+                    statusLabel.innerText = `Loaded ${stationCount} stations for ${year} successfully.`;
+                    statusLabel.style.color = "#27ae60";
                 });
             });
 
