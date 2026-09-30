@@ -812,16 +812,25 @@
 
             function getRainfallValue(properties) {
                 if (!properties) return 0;
-                if (properties.Hujan !== undefined) return parseFloat(properties.Hujan);
-                if (properties.Hujan_mm !== undefined) return parseFloat(properties.Hujan_mm);
-                if (properties.Rainfall !== undefined) return parseFloat(properties.Rainfall);
-                if (properties.contour !== undefined) return parseFloat(properties.contour);
-                if (properties.rr !== undefined) return parseFloat(properties.rr);
-                for (let key in properties) {
-                    let k = key.toLowerCase();
-                    if (k.includes('rain') || k.includes('precip') || k.includes('hujan')) return parseFloat(properties[key]) || 0;
+                let val = 0;
+                if (properties.Hujan !== undefined) val = parseFloat(properties.Hujan);
+                else if (properties.Hujan_mm !== undefined) val = parseFloat(properties.Hujan_mm);
+                else if (properties.Rainfall !== undefined) val = parseFloat(properties.Rainfall);
+                else if (properties.contour !== undefined) val = parseFloat(properties.contour);
+                else if (properties.rr !== undefined) val = parseFloat(properties.rr);
+                else {
+                    for (let key in properties) {
+                        let k = key.toLowerCase();
+                        if (k.includes('rain') || k.includes('precip') || k.includes('hujan')) {
+                            val = parseFloat(properties[key]);
+                            break;
+                        }
+                    }
                 }
-                return 0; 
+                
+                // Fallback added to prevent breaking layer styling if defective values are used here
+                if (isNaN(val) || val === -99.9 || val === -999 || val === -999.9) return 0;
+                return val; 
             }
 
             var eventLegend = L.control({position: 'bottomleft'});
@@ -963,15 +972,30 @@
                             }
                             
                             // Group and sum data by day of the month
-                            let rainfall = parseFloat(row.RAIN) || 0;
+                            // Defective values check: -99.9, -999, -999.9
+                            let rawRain = parseFloat(row.RAIN);
                             let day = parseInt(row.DAY);
                             
                             if (!isNaN(day)) {
-                                if (!stationGroups[stnName].dailyData[day]) {
-                                    stationGroups[stnName].dailyData[day] = 0;
+                                let isDefective = (rawRain === -99.9 || rawRain === -999 || rawRain === -999.9);
+                                let validRain = (!isNaN(rawRain) && !isDefective) ? rawRain : null;
+                                
+                                // Initialize day with valid data or null if defective/NaN
+                                if (stationGroups[stnName].dailyData[day] === undefined) {
+                                    stationGroups[stnName].dailyData[day] = validRain;
+                                } else if (validRain !== null) {
+                                    // If we already have initialized day and the incoming value is valid, aggregate
+                                    if (stationGroups[stnName].dailyData[day] === null) {
+                                        stationGroups[stnName].dailyData[day] = validRain;
+                                    } else {
+                                        stationGroups[stnName].dailyData[day] += validRain;
+                                    }
                                 }
-                                stationGroups[stnName].dailyData[day] += rainfall;
-                                stationGroups[stnName].sum += rainfall;
+
+                                // Apply to total sum only if the read value is not defective
+                                if (validRain !== null) {
+                                    stationGroups[stnName].sum += validRain;
+                                }
                             }
                         });
 
@@ -1012,6 +1036,7 @@
                                 
                                 days.forEach(d => {
                                     labels.push(d.toString());
+                                    // Pushing a null value renders a gap on the chart instead of 0
                                     readings.push(stn.dailyData[d]);
                                 });
 
