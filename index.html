@@ -469,7 +469,7 @@
         }
 
         /* ---------------------------------------------------
-           BOTTOM GRAPH GRID STYLES (For 3x2 Grid)
+           BOTTOM GRAPH GRID STYLES (For 6x1 Grid)
            --------------------------------------------------- */
         #bottom-grid-container {
             position: fixed;
@@ -483,6 +483,8 @@
             z-index: 1000;
             display: none; 
             font-family: Arial, sans-serif;
+            max-height: 80vh;
+            overflow-y: auto;
         }
 
         .grid-header {
@@ -510,11 +512,11 @@
             background: #95a5a6;
         }
 
-        /* Updated to 3 Rows x 2 Columns */
+        /* Updated to 6 Rows x 1 Column */
         .graph-grid {
             display: grid;
-            grid-template-columns: repeat(2, 330px);
-            grid-template-rows: repeat(3, 140px);
+            grid-template-columns: repeat(1, 4cm);
+            grid-template-rows: repeat(6, 3cm);
             gap: 8px;
         }
 
@@ -545,8 +547,8 @@
             .auth-box { padding: 25px; }
             .auth-box h2 { font-size: 18px; }
             .graph-grid {
-                grid-template-columns: repeat(2, 160px);
-                grid-template-rows: repeat(3, 110px);
+                grid-template-columns: repeat(1, 4cm);
+                grid-template-rows: repeat(6, 3cm);
             }
         }
     </style>
@@ -606,7 +608,7 @@
     <div id="map-climate"></div>
     <div id="map-kl"></div>
 
-    <!-- Bottom Grid Container (Reoriented to 3 Rows x 2 Columns) -->
+    <!-- Bottom Grid Container (Reoriented to 6 Rows x 1 Column) -->
     <div id="bottom-grid-container">
         <div class="grid-header">
             <span>Station Rainfall Accumulated Graphs</span>
