@@ -474,14 +474,14 @@
         #bottom-grid-container {
             position: fixed;
             bottom: 20px;
-            left: 20px; /* Shifted to bottom-left to avoid right control panel */
+            left: 20px;
             background: rgba(244, 246, 248, 0.95);
             padding: 12px;
             border-radius: 8px;
             border: 1px solid #ccc;
             box-shadow: 0 4px 15px rgba(0,0,0,0.4);
             z-index: 1000;
-            display: none; /* Hidden until a load button is clicked */
+            display: none; 
             font-family: Arial, sans-serif;
         }
 
@@ -1011,12 +1011,11 @@
                     </div>
 
                     <div class="accordion-header" style="border-top: 1px solid #fff;" onclick="window.toggleAccordion('content-5', 'icon-5', this)">
-                        <span>5) Sum of Rainfall</span><span id="icon-5" class="triangle">▼</span>
+                        <span>5) Sum of Daily Rainfall</span><span id="icon-5" class="triangle">▼</span>
                     </div>
                     <div id="content-5" class="accordion-content">
                         <div style="font-size: 11px; color: #e74c3c; margin-bottom: 8px; font-weight: bold;">Note: max is 6 stations</div>
                         <div class="monthly-control-box">
-                            <strong>1) Daily</strong>
                             <select id="filter-month-simple">
                                 <option value="01">JAN</option>
                                 <option value="02">FEB</option>
@@ -1033,9 +1032,15 @@
                             </select>
                             <button id="btnLoadDaily" class="btn-animate" style="background:#e84393; margin-top: 5px;">Load Data</button>
                         </div>
+                        <div id="data-status-daily" style="font-size:11px; text-align:center; color:#e74c3c; margin-top:5px;"></div>
+                    </div>
 
+                    <div class="accordion-header" style="border-top: 1px solid #fff;" onclick="window.toggleAccordion('content-6', 'icon-6', this)">
+                        <span>6) Sum of Monthly Rainfall</span><span id="icon-6" class="triangle">▼</span>
+                    </div>
+                    <div id="content-6" class="accordion-content">
+                        <div style="font-size: 11px; color: #e74c3c; margin-bottom: 8px; font-weight: bold;">Note: max is 6 stations</div>
                         <div class="monthly-control-box">
-                            <strong>2) Monthly</strong>
                             <select id="filter-year-monthly">
                                 <option value="2024" style="font-weight:bold;">2024</option>
                                 <option value="2025">2025</option>
@@ -1043,8 +1048,7 @@
                             </select>
                             <button id="btnLoadMonthlySum" class="btn-animate" style="background:#8e44ad; margin-top: 5px;">Load Data</button>
                         </div>
-                        
-                        <div id="data-status" style="font-size:11px; text-align:center; color:#e74c3c; margin-top:5px;"></div>
+                        <div id="data-status-monthly" style="font-size:11px; text-align:center; color:#e74c3c; margin-top:5px;"></div>
                     </div>
                 `;
                 return div;
@@ -1057,7 +1061,7 @@
             document.getElementById('btnLoadDaily').addEventListener('click', function() {
                 const year = "2024"; // Defaulting to 2024 as the base year for the daily fetch string
                 const month = document.getElementById('filter-month-simple').value;
-                const statusLabel = document.getElementById('data-status');
+                const statusLabel = document.getElementById('data-status-daily');
                 
                 statusLabel.innerText = "Fetching Daily Data...";
                 statusLabel.style.color = "#f39c12";
@@ -1228,7 +1232,7 @@
             // --- MONTHLY DATA LOGIC (PURPLE MARKERS) ---
             document.getElementById('btnLoadMonthlySum').addEventListener('click', function() {
                 const year = document.getElementById('filter-year-monthly').value;
-                const statusLabel = document.getElementById('data-status');
+                const statusLabel = document.getElementById('data-status-monthly');
                 
                 statusLabel.innerText = "Fetching Monthly Data (this may take a moment)...";
                 statusLabel.style.color = "#f39c12";
