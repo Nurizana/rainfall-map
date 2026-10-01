@@ -1085,13 +1085,22 @@
                         data.forEach(row => {
                             if (!row.LATITUDE || !row.LONGITUDE) return;
 
-                            let stnName = row['STATION NAME'] || row['WMOINDEX'];
-                            if (!stationGroups[stnName]) {
-                                stationGroups[stnName] = { 
+                            let stnId = row['WMOINDEX'];
+                            if (!stnId) return;
+
+                            let stnName = row['STATION NAME'] || String(stnId);
+                            
+                            // Group by standard WMOINDEX instead of inconsistent station names
+                            if (!stationGroups[stnId]) {
+                                stationGroups[stnId] = { 
+                                    name: stnName,
                                     lat: parseFloat(row.LATITUDE), 
                                     lon: parseFloat(row.LONGITUDE), 
                                     dailyData: {}, sum: 0 
                                 };
+                            } else if (stnName.length > stationGroups[stnId].name.length) {
+                                // Keep the longest (most descriptive) station name found
+                                stationGroups[stnId].name = stnName;
                             }
                             
                             let rawRain = parseFloat(row.RAIN);
@@ -1101,18 +1110,18 @@
                                 let isDefective = (rawRain === -99.9 || rawRain === -999 || rawRain === -999.9);
                                 let validRain = (!isNaN(rawRain) && !isDefective) ? rawRain : null;
                                 
-                                if (stationGroups[stnName].dailyData[day] === undefined) {
-                                    stationGroups[stnName].dailyData[day] = validRain;
+                                if (stationGroups[stnId].dailyData[day] === undefined) {
+                                    stationGroups[stnId].dailyData[day] = validRain;
                                 } else if (validRain !== null) {
-                                    if (stationGroups[stnName].dailyData[day] === null) {
-                                        stationGroups[stnName].dailyData[day] = validRain;
+                                    if (stationGroups[stnId].dailyData[day] === null) {
+                                        stationGroups[stnId].dailyData[day] = validRain;
                                     } else {
-                                        stationGroups[stnName].dailyData[day] += validRain;
+                                        stationGroups[stnId].dailyData[day] += validRain;
                                     }
                                 }
 
                                 if (validRain !== null) {
-                                    stationGroups[stnName].sum += validRain;
+                                    stationGroups[stnId].sum += validRain;
                                 }
                             }
                         });
@@ -1124,8 +1133,9 @@
                             return;
                         }
 
-                        Object.keys(stationGroups).forEach((stnName, idx) => {
-                            let stn = stationGroups[stnName];
+                        Object.keys(stationGroups).forEach((stnId, idx) => {
+                            let stn = stationGroups[stnId];
+                            let displayName = stn.name;
                             
                             var marker = L.circleMarker([stn.lat, stn.lon], {
                                 radius: 8, fillColor: '#ff69b4', color: "#000", weight: 1, opacity: 1, fillOpacity: 0.9 
@@ -1134,7 +1144,7 @@
                             let canvasId = 'chart-' + idx;
                             let popupContent = `
                                 <div style="width:250px;">
-                                    <b>${stnName}</b><br/>
+                                    <b>${displayName}</b><br/>
                                     Total Rain: ${stn.sum.toFixed(2)} mm<br/>
                                     <canvas id="${canvasId}" width="250" height="150"></canvas>
                                     <i>Click marker to pin to bottom grid</i>
@@ -1142,7 +1152,7 @@
                             `;
                             
                             marker.bindPopup(popupContent);
-                            marker.bindTooltip(stnName, { permanent: true, direction: 'right', className: 'station-label', offset: [8, 0] });
+                            marker.bindTooltip(displayName, { permanent: true, direction: 'right', className: 'station-label', offset: [8, 0] });
                             
                             marker.on('popupopen', function() {
                                 let labels = [];
@@ -1172,11 +1182,11 @@
                             });
 
                             marker.on('click', function() {
-                                if(gridStationNames.includes(stnName)) return;
+                                if(gridStationNames.includes(displayName)) return;
                                 let emptyIndex = gridStationNames.findIndex(name => name === null);
                                 
                                 if(emptyIndex !== -1) {
-                                    gridStationNames[emptyIndex] = stnName;
+                                    gridStationNames[emptyIndex] = displayName;
                                     let box = document.getElementById('grid-box-' + emptyIndex);
                                     box.innerHTML = `<canvas id="canvas-grid-${emptyIndex}"></canvas>`;
 
@@ -1202,7 +1212,7 @@
                                             responsive: true, maintainAspectRatio: false,
                                             plugins: {
                                                 legend: { display: false },
-                                                title: { display: true, text: stnName + ' (Daily)', font: {size: 11}, padding: { top: 2, bottom: 2 } }
+                                                title: { display: true, text: displayName + ' (Daily)', font: {size: 11}, padding: { top: 2, bottom: 2 } }
                                             },
                                             scales: {
                                                 x: { ticks: { font: { size: 8 } } },
@@ -1273,15 +1283,23 @@
                         monthRes.data.forEach(row => {
                             if (!row.LATITUDE || !row.LONGITUDE) return;
 
-                            let stnName = row['STATION NAME'] || row['WMOINDEX'];
-                            if (!stationGroups[stnName]) {
-                                // Explicitly initialize with nulls to skip defective data in the graph display
-                                stationGroups[stnName] = { 
+                            let stnId = row['WMOINDEX'];
+                            if (!stnId) return;
+
+                            let stnName = row['STATION NAME'] || String(stnId);
+                            
+                            // Group by standard WMOINDEX instead of inconsistent station names
+                            if (!stationGroups[stnId]) {
+                                stationGroups[stnId] = { 
+                                    name: stnName,
                                     lat: parseFloat(row.LATITUDE), 
                                     lon: parseFloat(row.LONGITUDE), 
                                     monthlySums: [null, null, null, null, null, null, null, null, null, null, null, null], 
                                     totalSum: 0 
                                 };
+                            } else if (stnName.length > stationGroups[stnId].name.length) {
+                                // Keep the longest (most descriptive) station name found
+                                stationGroups[stnId].name = stnName;
                             }
                             
                             let rawRain = parseFloat(row.RAIN);
@@ -1289,12 +1307,12 @@
                             
                             // Check the calculation for the monthly rainfall sum and exclude defective values
                             if (!isNaN(rawRain) && !isDefective) {
-                                if (stationGroups[stnName].monthlySums[mIndex] === null) {
-                                    stationGroups[stnName].monthlySums[mIndex] = rawRain;
+                                if (stationGroups[stnId].monthlySums[mIndex] === null) {
+                                    stationGroups[stnId].monthlySums[mIndex] = rawRain;
                                 } else {
-                                    stationGroups[stnName].monthlySums[mIndex] += rawRain;
+                                    stationGroups[stnId].monthlySums[mIndex] += rawRain;
                                 }
-                                stationGroups[stnName].totalSum += rawRain;
+                                stationGroups[stnId].totalSum += rawRain;
                             }
                         });
                     });
@@ -1306,8 +1324,9 @@
                         return;
                     }
 
-                    Object.keys(stationGroups).forEach((stnName) => {
-                        let stn = stationGroups[stnName];
+                    Object.keys(stationGroups).forEach((stnId) => {
+                        let stn = stationGroups[stnId];
+                        let displayName = stn.name;
                         
                         // Purple Marker for Monthly Load Data
                         var marker = L.circleMarker([stn.lat, stn.lon], {
@@ -1316,22 +1335,22 @@
                         
                         let popupContent = `
                             <div style="width:200px;">
-                                <b>${stnName}</b><br/>
+                                <b>${displayName}</b><br/>
                                 Yearly Total: ${stn.totalSum.toFixed(2)} mm<br/>
                                 <i>Click marker to pin monthly sums to bottom grid</i>
                             </div>
                         `;
                         
                         marker.bindPopup(popupContent);
-                        marker.bindTooltip(stnName, { permanent: true, direction: 'right', className: 'station-label', offset: [8, 0] });
+                        marker.bindTooltip(displayName, { permanent: true, direction: 'right', className: 'station-label', offset: [8, 0] });
                         
                         marker.on('click', function() {
-                            if(gridStationNames.includes(stnName)) return;
+                            if(gridStationNames.includes(displayName)) return;
                             
                             let emptyIndex = gridStationNames.findIndex(name => name === null);
                             
                             if(emptyIndex !== -1) {
-                                gridStationNames[emptyIndex] = stnName;
+                                gridStationNames[emptyIndex] = displayName;
                                 let box = document.getElementById('grid-box-' + emptyIndex);
                                 box.innerHTML = `<canvas id="canvas-grid-${emptyIndex}"></canvas>`;
 
@@ -1354,7 +1373,7 @@
                                         maintainAspectRatio: false,
                                         plugins: {
                                             legend: { display: false },
-                                            title: { display: true, text: stnName + ' (Monthly)', font: {size: 11}, padding: { top: 2, bottom: 2 } }
+                                            title: { display: true, text: displayName + ' (Monthly)', font: {size: 11}, padding: { top: 2, bottom: 2 } }
                                         },
                                         scales: {
                                             x: { ticks: { font: { size: 8 } } },
