@@ -469,7 +469,7 @@
         }
 
         /* ---------------------------------------------------
-           BOTTOM GRAPH GRID STYLES (For 2x3 Monthly Graphs)
+           BOTTOM GRAPH GRID STYLES (For 3x2 Grid)
            --------------------------------------------------- */
         #bottom-grid-container {
             position: fixed;
@@ -510,10 +510,11 @@
             background: #95a5a6;
         }
 
+        /* Updated to 3 Rows x 2 Columns */
         .graph-grid {
             display: grid;
-            grid-template-columns: repeat(3, 220px);
-            grid-template-rows: repeat(2, 140px);
+            grid-template-columns: repeat(2, 330px);
+            grid-template-rows: repeat(3, 140px);
             gap: 8px;
         }
 
@@ -535,7 +536,7 @@
             .top-tab-btn { padding: 0 8px; font-size: 11px; }
             #user-panel { gap: 10px; font-size: 12px; right: 10px; }
         }
-        @media (max-width: 700px) {
+        @media (max-width: 750px) {
             #top-tabs { left: 45px; }
             .top-tab-btn { height: 32px; font-size: 10px; }
             #user-email-display { display: none; } 
@@ -544,8 +545,8 @@
             .auth-box { padding: 25px; }
             .auth-box h2 { font-size: 18px; }
             .graph-grid {
-                grid-template-columns: repeat(2, 150px);
-                grid-template-rows: repeat(3, 100px);
+                grid-template-columns: repeat(2, 160px);
+                grid-template-rows: repeat(3, 110px);
             }
         }
     </style>
@@ -605,7 +606,7 @@
     <div id="map-climate"></div>
     <div id="map-kl"></div>
 
-    <!-- Bottom 2x3 Grid Container (Moved out of control panel) -->
+    <!-- Bottom Grid Container (Reoriented to 3 Rows x 2 Columns) -->
     <div id="bottom-grid-container">
         <div class="grid-header">
             <span>Station Rainfall Accumulated Graphs</span>
@@ -1274,18 +1275,25 @@
 
                             let stnName = row['STATION NAME'] || row['WMOINDEX'];
                             if (!stationGroups[stnName]) {
+                                // Explicitly initialize with nulls to skip defective data in the graph display
                                 stationGroups[stnName] = { 
                                     lat: parseFloat(row.LATITUDE), 
                                     lon: parseFloat(row.LONGITUDE), 
-                                    monthlySums: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                                    monthlySums: [null, null, null, null, null, null, null, null, null, null, null, null], 
                                     totalSum: 0 
                                 };
                             }
                             
                             let rawRain = parseFloat(row.RAIN);
+                            let isDefective = (rawRain === -99.9 || rawRain === -999 || rawRain === -999.9);
                             
-                            if (!isNaN(rawRain) && rawRain !== -99.9 && rawRain !== -999 && rawRain !== -999.9) {
-                                stationGroups[stnName].monthlySums[mIndex] += rawRain;
+                            // Check the calculation for the monthly rainfall sum and exclude defective values
+                            if (!isNaN(rawRain) && !isDefective) {
+                                if (stationGroups[stnName].monthlySums[mIndex] === null) {
+                                    stationGroups[stnName].monthlySums[mIndex] = rawRain;
+                                } else {
+                                    stationGroups[stnName].monthlySums[mIndex] += rawRain;
+                                }
                                 stationGroups[stnName].totalSum += rawRain;
                             }
                         });
@@ -1328,7 +1336,8 @@
                                 box.innerHTML = `<canvas id="canvas-grid-${emptyIndex}"></canvas>`;
 
                                 let labels = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-                                let readings = stn.monthlySums.map(v => v.toFixed(2));
+                                // Only format values if they aren't strictly null, otherwise pass null to skip drawing the bar
+                                let readings = stn.monthlySums.map(v => v !== null ? v.toFixed(2) : null);
 
                                 let ctxGrid = document.getElementById(`canvas-grid-${emptyIndex}`).getContext('2d');
                                 activeGridCharts[emptyIndex] = new Chart(ctxGrid, {
