@@ -473,8 +473,8 @@
            --------------------------------------------------- */
         #bottom-grid-container {
             position: fixed;
-            top: 75px; /* Anchored below the top bar so it doesn't overlap zoom controls */
-            left: 60px; /* Moved right to bypass the Leaflet +/- zoom controls completely */
+            top: 75px; 
+            left: 60px; 
             background: rgba(244, 246, 248, 0.95);
             padding: 12px;
             border-radius: 8px;
@@ -483,7 +483,7 @@
             z-index: 1000;
             display: none; 
             font-family: Arial, sans-serif;
-            max-height: calc(100vh - 100px); /* Leave breathing room at the bottom, allows scrolling */
+            max-height: calc(100vh - 100px); 
             overflow-y: auto;
         }
 
@@ -512,7 +512,6 @@
             background: #95a5a6;
         }
 
-        /* Updated to 6 Rows x 1 Column with Optimized Sizes */
         .graph-grid {
             display: grid;
             grid-template-columns: 300px;
@@ -547,7 +546,7 @@
             .auth-box { padding: 25px; }
             .auth-box h2 { font-size: 18px; }
             #bottom-grid-container {
-                left: 50px; /* Kept clear of zoom on small screens too */
+                left: 50px; 
             }
             .graph-grid {
                 grid-template-columns: 260px;
@@ -1257,10 +1256,13 @@
                 document.getElementById('bottom-grid-container').style.display = 'block';
 
                 let fetchPromises = [];
+                // Check if the year selected is 2025 to grab from Data2, else fallback to Data1
+                let folder = (year === "2025") ? "Data2" : "Data1";
+                
                 // Loop 1 to 12 to pull all available months for the year
                 for (let i = 1; i <= 12; i++) {
                     let monthStr = i.toString().padStart(2, '0');
-                    let url = `https://raw.githubusercontent.com/Nurizana/rainfall-map/main/Data1/Hourly_PMSS_${year}${monthStr}_WCoordinate.csv`;
+                    let url = `https://raw.githubusercontent.com/Nurizana/rainfall-map/main/${folder}/Hourly_PMSS_${year}${monthStr}_WCoordinate.csv`;
                     
                     fetchPromises.push(new Promise((resolve) => {
                         Papa.parse(url, {
