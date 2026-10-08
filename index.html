@@ -1273,25 +1273,31 @@
                     let monthStr = i.toString().padStart(2, '0');
                     let url;
                     
+                    // --- MODIFICATION: ADDING FETCH OPTIONS FOR AUTHENTICATION ---
+                    let fetchOptions = {
+                        download: true, 
+                        header: true, 
+                        dynamicTyping: true, 
+                        skipEmptyLines: true,
+                        complete: function(results) { resolve({monthIndex: i-1, data: results.data}); },
+                        error: function(err) { resolve({monthIndex: i-1, data: []}); } 
+                    };
+
                     // Determine which repository to use based on the year
                     if (yearNum >= 1991 && yearNum <= 2000) {
                         url = `https://raw.githubusercontent.com/Nurizana/Principal-Stations/main/${year}/Hourly_PMSS_${year}${monthStr}_WCoordinate.csv`;
+                        
+                        // Inject your PAT here for the Private Repo
+                        fetchOptions.downloadRequestHeaders = {
+                            "Authorization": "token YOUR_NEW_PAT_HERE" 
+                        };
                     } else {
                         let folder = (year === "2025") ? "Data2" : "Data1";
                         url = `https://raw.githubusercontent.com/Nurizana/rainfall-map/main/${folder}/Hourly_PMSS_${year}${monthStr}_WCoordinate.csv`;
                     }
                     
                     fetchPromises.push(new Promise((resolve) => {
-                        Papa.parse(url, {
-                            download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
-                            complete: function(results) { 
-                                resolve({monthIndex: i-1, data: results.data}); 
-                            },
-                            error: function(err) { 
-                                // Resolve empty array if a specific month file doesn't exist yet
-                                resolve({monthIndex: i-1, data: []}); 
-                            } 
-                        });
+                        Papa.parse(url, fetchOptions);
                     }));
                 }
 
