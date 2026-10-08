@@ -24,6 +24,7 @@
             width: 100%; 
         }
 
+        /* Maps now stretch completely to the top, under the transparent ribbon */
         #map, #map-climate, #map-kl { 
             height: 100%; 
             width: 100%; 
@@ -176,6 +177,7 @@
             display: none; 
         }
 
+        /* Security Overlay Styling */
         #auth-overlay {
             position: fixed; 
             top: 0; 
@@ -312,6 +314,10 @@
             margin: 20px 0; 
             color: yellow; 
         }
+
+        /* ---------------------------------------------------
+           NEW LAYOUT: Transparent Overlay & Top Right Panel 
+           --------------------------------------------------- */
            
         #top-ui-container {
             position: fixed;
@@ -407,6 +413,8 @@
             background: #c0392b; 
         }
 
+        /* --------------------------------------------------- */
+
         .leaflet-top { 
             margin-top: 60px; 
         } 
@@ -435,6 +443,7 @@
             background: #95a5a6; 
         }
 
+        /* Monthly/Daily Selection Block Styles */
         .monthly-control-box {
             background: #f4f6f8;
             padding: 12px;
@@ -459,6 +468,9 @@
             font-size: 12px;
         }
 
+        /* ---------------------------------------------------
+           BOTTOM GRAPH GRID STYLES (For 6x1 Grid)
+           --------------------------------------------------- */
         #bottom-grid-container {
             position: fixed;
             top: 75px; 
@@ -569,7 +581,9 @@
         </div>
     </div>
 
+    <!-- Unified Transparent Overlay -->
     <div id="top-ui-container">
+        <!-- Left Aligned Tabs -->
         <div id="top-tabs">
             <div class="top-tab-btn active" id="tabMain" title="Go to Main Map">
                 <span>🏠 Main Map</span>
@@ -584,16 +598,19 @@
             </div>
         </div>
 
+        <!-- Right Aligned Panel -->
         <div id="user-panel">
             <span id="user-email-display"></span>
             <button id="btn-app-logout">Log Out</button>
         </div>
     </div>
 
+    <!-- Map Containers stretch completely behind the transparent overlay -->
     <div id="map"></div>
     <div id="map-climate"></div>
     <div id="map-kl"></div>
 
+    <!-- Bottom Grid Container (Reoriented to 6 Rows x 1 Column) -->
     <div id="bottom-grid-container">
         <div class="grid-header">
             <span>Station Rainfall Accumulated Graphs</span>
@@ -620,6 +637,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
+        // --- DYNAMIC BACKGROUND INFINITE SWIPE ANIMATION ---
         const mapImages = [
             'World_mapTravel.jpg',
             'World_map.jpg',
@@ -660,6 +678,7 @@
         
         setInterval(slideBackground, 3000);
 
+        // --- SECURITY IMPLEMENTATIONS ---
         document.addEventListener('contextmenu', event => event.preventDefault());
 
         document.addEventListener('keydown', function(e) {
@@ -674,6 +693,7 @@
         window.addEventListener('blur', function() { document.body.classList.add('blurred'); });
         window.addEventListener('focus', function() { document.body.classList.remove('blurred'); });
 
+        // --- FIREBASE CONFIGURATION ---
         var firebaseConfig = {
           apiKey: "AIzaSyAcGx3t733bHUh-k3VFgMdcWuRMY9LERC8",
           authDomain: "rainfall-map-f20f5.firebaseapp.com",
@@ -695,6 +715,7 @@
         const userEmailDisplay = document.getElementById('user-email-display');
         const btnAppLogout = document.getElementById('btn-app-logout');
 
+        // --- IDLE TIMEOUT LOGIC ---
         let idleTimer;
         let countdownInterval;
         const IDLE_TIME = 30000; 
@@ -849,10 +870,12 @@
         document.getElementById('tabClimate').addEventListener('click', () => toggleMap('map-climate'));
         document.getElementById('tabKL').addEventListener('click', () => toggleMap('map-kl'));
 
+        // --- GRID GRAPH VARIABLES ---
         let activeGridCharts = [null, null, null, null, null, null];
         let gridStationNames = [null, null, null, null, null, null];
 
         document.addEventListener('click', function(e) {
+            // Logic to clear the grid 
             if(e.target && e.target.id === 'btnClearGrid') {
                 for(let i=0; i<6; i++) {
                     if(activeGridCharts[i]) activeGridCharts[i].destroy();
@@ -861,6 +884,7 @@
                     document.getElementById('grid-box-'+i).innerHTML = 'Empty';
                 }
             }
+            // Logic to close the grid entirely
             if(e.target && e.target.id === 'btnCloseGrid') {
                 document.getElementById('bottom-grid-container').style.display = 'none';
             }
@@ -1023,16 +1047,6 @@
                         <div style="font-size: 11px; color: #e74c3c; margin-bottom: 8px; font-weight: bold;">Note: max is 6 stations</div>
                         <div class="monthly-control-box">
                             <select id="filter-year-monthly">
-                                <option value="1991">1991</option>
-                                <option value="1992">1992</option>
-                                <option value="1993">1993</option>
-                                <option value="1994">1994</option>
-                                <option value="1995">1995</option>
-                                <option value="1996">1996</option>
-                                <option value="1997">1997</option>
-                                <option value="1998">1998</option>
-                                <option value="1999">1999</option>
-                                <option value="2000">2000</option>
                                 <option value="2024" style="font-weight:bold;">2024</option>
                                 <option value="2025">2025</option>
                                 <option value="2026">2026</option>
@@ -1048,8 +1062,9 @@
 
             let customDataLayer = L.layerGroup();
             
+            // --- DAILY DATA LOGIC (PINK MARKERS) ---
             document.getElementById('btnLoadDaily').addEventListener('click', function() {
-                const year = "2024"; 
+                const year = "2024"; // Defaulting to 2024 as the base year for the daily fetch string
                 const month = document.getElementById('filter-month-simple').value;
                 const statusLabel = document.getElementById('data-status-daily');
                 
@@ -1077,9 +1092,9 @@
                             let stnId = row['WMOINDEX'];
                             if (!stnId) return;
 
-                            // Correction: Search for 'STATION NAME_x' as labeled in CSV 
-                            let stnName = row['STATION NAME'] || row['STATION NAME_x'] || row['STATION NAME_y'] || String(stnId);
+                            let stnName = row['STATION NAME'] || String(stnId);
                             
+                            // Group by standard WMOINDEX instead of inconsistent station names
                             if (!stationGroups[stnId]) {
                                 stationGroups[stnId] = { 
                                     name: stnName,
@@ -1088,6 +1103,7 @@
                                     dailyData: {}, sum: 0 
                                 };
                             } else if (stnName.length > stationGroups[stnId].name.length) {
+                                // Keep the longest (most descriptive) station name found
                                 stationGroups[stnId].name = stnName;
                             }
                             
@@ -1193,7 +1209,7 @@
                                             labels: labels,
                                             datasets: [{
                                                 data: readings,
-                                                backgroundColor: 'rgba(255, 105, 180, 0.8)'
+                                                backgroundColor: 'rgba(255, 105, 180, 0.8)' // Pink fill for daily grid
                                             }]
                                         },
                                         options: {
@@ -1228,6 +1244,7 @@
                 });
             });
 
+            // --- MONTHLY DATA LOGIC (PURPLE MARKERS) ---
             document.getElementById('btnLoadMonthlySum').addEventListener('click', function() {
                 const year = document.getElementById('filter-year-monthly').value;
                 const statusLabel = document.getElementById('data-status-monthly');
@@ -1235,38 +1252,29 @@
                 statusLabel.innerText = "Fetching Monthly Data (this may take a moment)...";
                 statusLabel.style.color = "#f39c12";
                 
+                // Show bottom grid panel when interaction begins
                 document.getElementById('bottom-grid-container').style.display = 'block';
 
                 let fetchPromises = [];
-                let yearNum = parseInt(year);
+                // Check if the year selected is 2025 to grab from Data2, else fallback to Data1
+                let folder = (year === "2025") ? "Data2" : "Data1";
                 
+                // Loop 1 to 12 to pull all available months for the year
                 for (let i = 1; i <= 12; i++) {
                     let monthStr = i.toString().padStart(2, '0');
-                    let url;
-                    
-                    let fetchOptions = {
-                        download: true, 
-                        header: true, 
-                        dynamicTyping: true, 
-                        skipEmptyLines: true,
-                        complete: function(results) { resolve({monthIndex: i-1, data: results.data}); },
-                        error: function(err) { resolve({monthIndex: i-1, data: []}); } 
-                    };
-
-                    if (yearNum >= 1991 && yearNum <= 2000) {
-                        url = `https://raw.githubusercontent.com/Nurizana/Principal-Stations/main/${year}/Hourly_PMSS_${year}${monthStr}_WCoordinate.csv`;
-                        
-                        // Correction: Prefixing PAT with 'Bearer' format for Authorization
-                        fetchOptions.downloadRequestHeaders = {
-                            "Authorization": "Bearer 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" 
-                        };
-                    } else {
-                        let folder = (year === "2025") ? "Data2" : "Data1";
-                        url = `https://raw.githubusercontent.com/Nurizana/rainfall-map/main/${folder}/Hourly_PMSS_${year}${monthStr}_WCoordinate.csv`;
-                    }
+                    let url = `https://raw.githubusercontent.com/Nurizana/rainfall-map/main/${folder}/Hourly_PMSS_${year}${monthStr}_WCoordinate.csv`;
                     
                     fetchPromises.push(new Promise((resolve) => {
-                        Papa.parse(url, fetchOptions);
+                        Papa.parse(url, {
+                            download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
+                            complete: function(results) { 
+                                resolve({monthIndex: i-1, data: results.data}); 
+                            },
+                            error: function(err) { 
+                                // Resolve empty array if a specific month file doesn't exist yet
+                                resolve({monthIndex: i-1, data: []}); 
+                            } 
+                        });
                     }));
                 }
 
@@ -1276,6 +1284,7 @@
                     
                     var stationGroups = {};
 
+                    // Aggregate all months 
                     results.forEach(monthRes => {
                         let mIndex = monthRes.monthIndex;
                         monthRes.data.forEach(row => {
@@ -1284,9 +1293,9 @@
                             let stnId = row['WMOINDEX'];
                             if (!stnId) return;
 
-                            // Correction: Search for 'STATION NAME_x' as labeled in CSV
-                            let stnName = row['STATION NAME'] || row['STATION NAME_x'] || row['STATION NAME_y'] || String(stnId);
+                            let stnName = row['STATION NAME'] || String(stnId);
                             
+                            // Group by standard WMOINDEX instead of inconsistent station names
                             if (!stationGroups[stnId]) {
                                 stationGroups[stnId] = { 
                                     name: stnName,
@@ -1296,12 +1305,14 @@
                                     totalSum: 0 
                                 };
                             } else if (stnName.length > stationGroups[stnId].name.length) {
+                                // Keep the longest (most descriptive) station name found
                                 stationGroups[stnId].name = stnName;
                             }
                             
                             let rawRain = parseFloat(row.RAIN);
                             let isDefective = (rawRain === -99.9 || rawRain === -999 || rawRain === -999.9);
                             
+                            // Check the calculation for the monthly rainfall sum and exclude defective values
                             if (!isNaN(rawRain) && !isDefective) {
                                 if (stationGroups[stnId].monthlySums[mIndex] === null) {
                                     stationGroups[stnId].monthlySums[mIndex] = rawRain;
@@ -1324,6 +1335,7 @@
                         let stn = stationGroups[stnId];
                         let displayName = stn.name;
                         
+                        // Purple Marker for Monthly Load Data
                         var marker = L.circleMarker([stn.lat, stn.lon], {
                             radius: 8, fillColor: '#8e44ad', color: "#000", weight: 1, opacity: 1, fillOpacity: 0.9 
                         });
@@ -1350,6 +1362,7 @@
                                 box.innerHTML = `<canvas id="canvas-grid-${emptyIndex}"></canvas>`;
 
                                 let labels = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+                                // Only format values if they aren't strictly null, otherwise pass null to skip drawing the bar
                                 let readings = stn.monthlySums.map(v => v !== null ? v.toFixed(2) : null);
 
                                 let ctxGrid = document.getElementById(`canvas-grid-${emptyIndex}`).getContext('2d');
@@ -1359,7 +1372,7 @@
                                         labels: labels,
                                         datasets: [{
                                             data: readings,
-                                            backgroundColor: 'rgba(142, 68, 173, 0.8)' 
+                                            backgroundColor: 'rgba(142, 68, 173, 0.8)' // Purple fill for monthly grid
                                         }]
                                     },
                                     options: {
