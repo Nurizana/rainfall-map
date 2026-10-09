@@ -3,565 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rainfall Map - Secure Access</title>
+    <title>Rainfall Map - Main Map</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <style>
         body { 
-            padding: 0; 
-            margin: 0; 
-            box-sizing: border-box; 
-            -webkit-user-select: none; 
-            -ms-user-select: none; 
-            user-select: none; 
-            overflow: hidden;
-            background-color: #141923;
+            padding: 0; margin: 0; box-sizing: border-box; 
+            -webkit-user-select: none; -ms-user-select: none; user-select: none; 
+            overflow: hidden; background-color: #141923;
         }
-        
-        html, body { 
-            height: 100%; 
-            width: 100%; 
-        }
+        html, body { height: 100%; width: 100%; }
 
-        /* Maps now stretch completely to the top, under the transparent ribbon */
-        #map, #map-climate, #map-kl { 
-            height: 100%; 
-            width: 100%; 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
+        #map { 
+            height: 100%; width: 100%; position: absolute; 
+            top: 0; left: 0; z-index: 1; 
         }
         
-        #map { z-index: 1; }
-        #map-climate, #map-kl { display: none; z-index: 1; }
-        
-        @media print {
-            body { display: none !important; }
-        }
-
-        body.blurred {
-            filter: blur(10px);
-            pointer-events: none;
-        }
+        @media print { body { display: none !important; } }
+        body.blurred { filter: blur(10px); pointer-events: none; }
         
         .legend {
-            background: white; 
-            padding: 10px 15px; 
-            border-radius: 5px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.2); 
-            color: #333; 
-            font-family: Arial, sans-serif;
-            max-height: 400px; 
-            overflow-y: auto;
+            background: white; padding: 10px 15px; border-radius: 5px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2); color: #333; font-family: Arial, sans-serif;
+            max-height: 400px; overflow-y: auto;
         }
-        
-        .legend-item { 
-            display: flex; 
-            align-items: center; 
-            margin-bottom: 4px; 
-            min-height: 25px; 
-        }
-        
-        .legend-circle-container { 
-            width: 60px; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            margin-right: 10px; 
-        }
-        
-        .legend-circle { 
-            border-radius: 50%; 
-            border: 1px solid #000; 
-        }
+        .legend-item { display: flex; align-items: center; margin-bottom: 4px; min-height: 25px; }
+        .legend-circle-container { width: 60px; display: flex; justify-content: center; align-items: center; margin-right: 10px; }
+        .legend-circle { border-radius: 50%; border: 1px solid #000; }
         
         .custom-control-panel {
-            background: white; 
-            border-radius: 5px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            width: 320px; 
-            font-family: Arial, sans-serif; 
-            font-size: 13px;
+            background: white; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            width: 320px; font-family: Arial, sans-serif; font-size: 13px;
         }
-        
         .accordion-header {
-            background: #3182bd; 
-            color: white; 
-            padding: 10px; 
-            cursor: pointer; 
-            font-weight: bold;
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            user-select: none;
+            background: #3182bd; color: white; padding: 10px; cursor: pointer; 
+            font-weight: bold; display: flex; justify-content: space-between; align-items: center; user-select: none;
         }
-        
-        .accordion-header:first-child { 
-            border-top-left-radius: 5px; 
-            border-top-right-radius: 5px; 
-        }
-        
-        .accordion-header:last-of-type { 
-            border-bottom-left-radius: 5px; 
-            border-bottom-right-radius: 5px; 
-        }
-        
-        .accordion-header.active:last-of-type { 
-            border-bottom-left-radius: 0; 
-            border-bottom-right-radius: 0; 
-        }
-        
+        .accordion-header:first-child { border-top-left-radius: 5px; border-top-right-radius: 5px; }
+        .accordion-header:last-of-type { border-bottom-left-radius: 5px; border-bottom-right-radius: 5px; }
+        .accordion-header.active:last-of-type { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
         .accordion-content {
-            display: none; 
-            padding: 10px; 
-            max-height: 350px; 
-            overflow-y: auto; 
-            background: white;
-            border-left: 1px solid #ccc; 
-            border-right: 1px solid #ccc; 
-            border-bottom: 1px solid #ccc;
+            display: none; padding: 10px; max-height: 350px; overflow-y: auto; background: white;
+            border-left: 1px solid #ccc; border-right: 1px solid #ccc; border-bottom: 1px solid #ccc;
         }
-        
-        .accordion-content.show { 
-            display: block; 
-        }
-        
-        .layer-item { 
-            margin-bottom: 8px; 
-            display: flex; 
-            align-items: center; 
-            cursor: pointer; 
-        }
-        
-        .layer-item input { 
-            margin-right: 8px; 
-            cursor: pointer; 
-        }
-        
-        .triangle { 
-            transition: transform 0.3s ease; 
-            font-size: 16px; 
-            color: white; 
-        }
-        
-        .triangle.open { 
-            transform: rotate(180deg); 
-        }
+        .accordion-content.show { display: block; }
+        .layer-item { margin-bottom: 8px; display: flex; align-items: center; cursor: pointer; }
+        .layer-item input { margin-right: 8px; cursor: pointer; }
+        .triangle { transition: transform 0.3s ease; font-size: 16px; color: white; }
+        .triangle.open { transform: rotate(180deg); }
 
         .station-label {
-            color: yellow; 
-            font-weight: bold; 
-            font-size: 12px;
-            background: transparent; 
-            border: none; 
-            box-shadow: none; 
-            text-shadow: 1px 1px 2px black; 
+            color: yellow; font-weight: bold; font-size: 12px; background: transparent; 
+            border: none; box-shadow: none; text-shadow: 1px 1px 2px black; 
         }
-        
         .contour-label {
-            color: #222; 
-            font-weight: bold; 
-            font-size: 11px;
-            background: transparent; 
-            border: none; 
-            box-shadow: none; 
-            text-shadow: 1px 1px 2px white; 
+            color: #222; font-weight: bold; font-size: 11px; background: transparent; 
+            border: none; box-shadow: none; text-shadow: 1px 1px 2px white; 
         }
-        
         .leaflet-tooltip-left.station-label::before, 
         .leaflet-tooltip-right.station-label::before,
         .leaflet-tooltip-top.contour-label::before, 
         .leaflet-tooltip-bottom.contour-label::before,
-        .leaflet-tooltip-center.contour-label::before { 
-            display: none; 
-        }
+        .leaflet-tooltip-center.contour-label::before { display: none; }
 
-        /* Security Overlay Styling */
         #auth-overlay {
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%;
-            z-index: 9999; 
-            display: flex; 
-            flex-direction: column;
-            justify-content: center; 
-            align-items: center; 
-            color: white; 
-            font-family: Arial, sans-serif;
-            background-color: #141923;
-            overflow: hidden; 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            color: white; font-family: Arial, sans-serif; background-color: #141923; overflow: hidden; 
         }
-        
-        #bg-slider {
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            height: 100%;
-            display: flex;
-            z-index: 1;
-        }
-        
-        .bg-slide {
-            width: 100vw; 
-            flex-shrink: 0;
-            height: 100%;
-            background-size: cover;
-            background-position: center;
-        }
-        
-        .bg-overlay-gradient {
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%;
-            background: linear-gradient(rgba(20, 25, 35, 0.8), rgba(20, 25, 35, 0.8));
-            z-index: 2;
-        }
-
-        .auth-box {
-            background: rgba(40, 44, 52, 0.95);
-            padding: 35px; 
-            border-radius: 10px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.7); 
-            text-align: center; 
-            width: 90%; 
-            max-width: 350px; 
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            z-index: 3;
-        }
-        
-        .auth-box h2 {
-            margin-top: 0; 
-            margin-bottom: 25px;
-            font-size: 22px; 
-            letter-spacing: 1px;
-        }
-        
-        .auth-box input, .auth-box button {
-            width: 100%; 
-            padding: 12px; 
-            margin: 8px 0; 
-            border-radius: 5px; 
-            border: none; 
-            box-sizing: border-box;
-        }
-        
-        .auth-box input {
-            background: #1e1e1e;
-            color: #fff;
-            border: 1px solid #444;
-        }
-        
-        .auth-box input:focus {
-            outline: none;
-            border-color: #3182bd;
-        }
-        
-        .auth-box button { 
-            background: #3182bd; 
-            color: white; 
-            font-weight: bold; 
-            cursor: pointer; 
-            transition: background 0.3s; 
-        }
-        
-        .auth-box button:hover { 
-            background: #6baed6; 
-        }
-        
-        #auth-message { 
-            color: #f1c40f; 
-            font-size: 13px; 
-            margin-top: 15px; 
-            font-weight: bold; 
-        }
+        #bg-slider { position: absolute; top: 0; left: 0; height: 100%; display: flex; z-index: 1; }
+        .bg-slide { width: 100vw; flex-shrink: 0; height: 100%; background-size: cover; background-position: center; }
+        .bg-overlay-gradient { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(rgba(20, 25, 35, 0.8), rgba(20, 25, 35, 0.8)); z-index: 2; }
+        .auth-box { background: rgba(40, 44, 52, 0.95); padding: 35px; border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,0.7); text-align: center; width: 90%; max-width: 350px; border: 1px solid rgba(255, 255, 255, 0.1); z-index: 3; }
+        .auth-box h2 { margin-top: 0; margin-bottom: 25px; font-size: 22px; letter-spacing: 1px; }
+        .auth-box input, .auth-box button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 5px; border: none; box-sizing: border-box; }
+        .auth-box input { background: #1e1e1e; color: #fff; border: 1px solid #444; }
+        .auth-box input:focus { outline: none; border-color: #3182bd; }
+        .auth-box button { background: #3182bd; color: white; font-weight: bold; cursor: pointer; transition: background 0.3s; }
+        .auth-box button:hover { background: #6baed6; }
+        #auth-message { color: #f1c40f; font-size: 13px; margin-top: 15px; font-weight: bold; }
 
         #timeout-overlay {
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%;
-            background: rgba(0, 0, 0, 0.85); 
-            z-index: 10000; 
-            display: none; 
-            flex-direction: column;
-            justify-content: center; 
-            align-items: center; 
-            color: white; 
-            font-family: Arial, sans-serif;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); 
+            z-index: 10000; display: none; flex-direction: column; justify-content: center; align-items: center; color: white; font-family: Arial, sans-serif;
         }
-        
-        .timeout-box {
-            background: #e74c3c; 
-            padding: 30px; 
-            border-radius: 8px;
-            text-align: center; 
-            width: 90%; 
-            max-width: 400px; 
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-        }
-        
+        .timeout-box { background: #e74c3c; padding: 30px; border-radius: 8px; text-align: center; width: 90%; max-width: 400px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
         .timeout-box h2 { margin-top: 0; }
-        
-        #countdown-timer { 
-            font-size: 48px; 
-            font-weight: bold; 
-            margin: 20px 0; 
-            color: yellow; 
-        }
+        #countdown-timer { font-size: 48px; font-weight: bold; margin: 20px 0; color: yellow; }
 
-        /* ---------------------------------------------------
-           NEW LAYOUT: Transparent Overlay & Top Right Panel 
-           --------------------------------------------------- */
-           
         #top-ui-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 52px; 
-            background: transparent; 
-            border-bottom: 2px solid #3182bd;
-            display: none; 
-            z-index: 2000;
-            pointer-events: none; 
+            position: fixed; top: 0; left: 0; width: 100%; height: 52px; background: transparent; 
+            border-bottom: 2px solid #3182bd; display: none; z-index: 2000; pointer-events: none; 
         }
-
-        #top-tabs {
-            position: absolute;
-            bottom: 0; 
-            left: 55px; 
-            display: flex;
-            flex-direction: row;
-            gap: 5px;
-            pointer-events: auto; 
-        }
-        
+        #top-tabs { position: absolute; bottom: 0; left: 55px; display: flex; flex-direction: row; gap: 5px; pointer-events: auto; }
         .top-tab-btn {
-            background: rgba(40, 44, 52, 0.9); 
-            color: #cbd5e1;
-            border: 1px solid #444;
-            border-bottom: none;
-            border-radius: 8px 8px 0 0;
-            padding: 0 15px;
-            font-family: Arial, sans-serif;
-            font-size: 13px;
-            font-weight: bold;
-            cursor: pointer;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s;
-            box-shadow: 2px -2px 5px rgba(0,0,0,0.3);
+            background: rgba(40, 44, 52, 0.9); color: #cbd5e1; border: 1px solid #444; border-bottom: none;
+            border-radius: 8px 8px 0 0; padding: 0 15px; font-family: Arial, sans-serif; font-size: 13px; font-weight: bold;
+            cursor: pointer; height: 40px; display: flex; align-items: center; justify-content: center; transition: all 0.3s; box-shadow: 2px -2px 5px rgba(0,0,0,0.3);
         }
-        
-        .top-tab-btn:hover { 
-            background: rgba(58, 63, 75, 1); 
-            color: #fff; 
-        }
-        
-        .top-tab-btn.active { 
-            background: #3182bd; 
-            color: white; 
-            border-color: #3182bd; 
-        }
-
-        .inline-arrow {
-            display: inline-block;
-            width: 0;
-            height: 0;
-            border-left: 6px solid transparent;
-            border-right: 6px solid transparent;
-            border-top: 8px solid #ffffff; 
-            margin-left: 10px; 
-        }
+        .top-tab-btn:hover { background: rgba(58, 63, 75, 1); color: #fff; }
+        .top-tab-btn.active { background: #3182bd; color: white; border-color: #3182bd; }
+        .inline-arrow { display: inline-block; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 8px solid #ffffff; margin-left: 10px; }
 
         #user-panel {
-            position: absolute;
-            right: 20px;
-            bottom: 8px; 
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            color: #ffffff;
-            font-family: Arial, sans-serif;
-            font-size: 14px;
-            font-weight: bold;
-            pointer-events: auto; 
+            position: absolute; right: 20px; bottom: 8px; display: flex; align-items: center; gap: 15px;
+            color: #ffffff; font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; pointer-events: auto;
             text-shadow: 1px 1px 3px rgba(0,0,0,0.9), -1px -1px 3px rgba(0,0,0,0.9), 1px -1px 3px rgba(0,0,0,0.9), -1px 1px 3px rgba(0,0,0,0.9);
         }
+        #btn-app-logout { background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.5); text-shadow: none; }
+        #btn-app-logout:hover { background: #c0392b; }
 
-        #btn-app-logout {
-            background: #e74c3c; 
-            color: white; 
-            border: none; 
-            padding: 6px 12px; 
-            border-radius: 4px; 
-            cursor: pointer; 
-            font-weight: bold;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-            text-shadow: none; 
-        }
-        
-        #btn-app-logout:hover { 
-            background: #c0392b; 
-        }
+        .leaflet-top { margin-top: 60px; } 
+        .btn-animate { width: 100%; padding: 8px; background: #e74c3c; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-bottom: 5px; }
+        .btn-animate:hover { background: #c0392b; }
+        .btn-animate-stop { background: #7f8c8d; }
+        .btn-animate-stop:hover { background: #95a5a6; }
 
-        /* --------------------------------------------------- */
+        .monthly-control-box { background: #f4f6f8; padding: 12px; border-radius: 5px; border: 1px solid #ddd; margin-bottom: 10px; }
+        .monthly-control-box strong { display: block; margin-bottom: 8px; color: #333; font-size: 13px; }
+        .monthly-control-box select { width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #ccc; font-size: 12px; }
 
-        .leaflet-top { 
-            margin-top: 60px; 
-        } 
-        
-        .btn-animate {
-            width: 100%; 
-            padding: 8px; 
-            background: #e74c3c; 
-            color: white; 
-            border: none; 
-            border-radius: 4px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            margin-bottom: 5px;
-        }
-        
-        .btn-animate:hover { 
-            background: #c0392b; 
-        }
-        
-        .btn-animate-stop { 
-            background: #7f8c8d; 
-        }
-        
-        .btn-animate-stop:hover { 
-            background: #95a5a6; 
-        }
-
-        /* Monthly/Daily Selection Block Styles */
-        .monthly-control-box {
-            background: #f4f6f8;
-            padding: 12px;
-            border-radius: 5px;
-            border: 1px solid #ddd;
-            margin-bottom: 10px;
-        }
-        
-        .monthly-control-box strong {
-            display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-size: 13px;
-        }
-
-        .monthly-control-box select {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 10px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            font-size: 12px;
-        }
-
-        /* ---------------------------------------------------
-           BOTTOM GRAPH GRID STYLES (For 6x1 Grid)
-           --------------------------------------------------- */
         #bottom-grid-container {
-            position: fixed;
-            top: 75px; 
-            left: 60px; 
-            background: rgba(244, 246, 248, 0.95);
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-            z-index: 1000;
-            display: none; 
-            font-family: Arial, sans-serif;
-            max-height: calc(100vh - 100px); 
-            overflow-y: auto;
+            position: fixed; top: 75px; left: 60px; background: rgba(244, 246, 248, 0.95); padding: 12px;
+            border-radius: 8px; border: 1px solid #ccc; box-shadow: 0 4px 15px rgba(0,0,0,0.4); z-index: 1000;
+            display: none; font-family: Arial, sans-serif; max-height: calc(100vh - 100px); overflow-y: auto;
         }
+        .grid-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; font-weight: bold; color: #333; }
+        .btn-clear-grid { background: #7f8c8d; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold; }
+        .btn-clear-grid:hover { background: #95a5a6; }
+        .graph-grid { display: grid; grid-template-columns: 300px; grid-template-rows: repeat(6, 120px); gap: 8px; }
+        .graph-box { background: #fff; border: 1px solid #ddd; border-radius: 4px; display: flex; justify-content: center; align-items: center; font-size: 12px; color: #999; position: relative; overflow: hidden; box-shadow: inset 0 0 5px rgba(0,0,0,0.05); }
 
-        .grid-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-            font-size: 13px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .btn-clear-grid {
-            background: #7f8c8d;
-            color: white;
-            border: none;
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 11px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .btn-clear-grid:hover {
-            background: #95a5a6;
-        }
-
-        .graph-grid {
-            display: grid;
-            grid-template-columns: 300px;
-            grid-template-rows: repeat(6, 120px);
-            gap: 8px;
-        }
-
-        .graph-box {
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 12px;
-            color: #999;
-            position: relative;
-            overflow: hidden;
-            box-shadow: inset 0 0 5px rgba(0,0,0,0.05);
-        }
-
-        @media (max-width: 950px) {
-            .top-tab-btn { padding: 0 8px; font-size: 11px; }
-            #user-panel { gap: 10px; font-size: 12px; right: 10px; }
-        }
+        @media (max-width: 950px) { .top-tab-btn { padding: 0 8px; font-size: 11px; } #user-panel { gap: 10px; font-size: 12px; right: 10px; } }
         @media (max-width: 750px) {
-            #top-tabs { left: 45px; }
-            .top-tab-btn { height: 32px; font-size: 10px; }
-            #user-email-display { display: none; } 
-            .custom-control-panel { width: 200px; font-size: 12px; }
-            .legend { font-size: 11px; max-height: 200px; padding: 8px; }
-            .auth-box { padding: 25px; }
-            .auth-box h2 { font-size: 18px; }
-            #bottom-grid-container {
-                left: 50px; 
-            }
-            .graph-grid {
-                grid-template-columns: 260px;
-                grid-template-rows: repeat(6, 100px);
-            }
+            #top-tabs { left: 45px; } .top-tab-btn { height: 32px; font-size: 10px; } #user-email-display { display: none; } 
+            .custom-control-panel { width: 200px; font-size: 12px; } .legend { font-size: 11px; max-height: 200px; padding: 8px; }
+            .auth-box { padding: 25px; } .auth-box h2 { font-size: 18px; } #bottom-grid-container { left: 50px; }
+            .graph-grid { grid-template-columns: 260px; grid-template-rows: repeat(6, 100px); }
         }
     </style>
 </head>
 <body>
 
     <div id="auth-overlay">
-        <!-- Background Slider -->
         <div id="bg-slider"></div>
         <div class="bg-overlay-gradient"></div>
-
         <div class="auth-box">
             <h2>Analisa Ramalan Jangka Panjang</h2>
             <input type="email" id="email" placeholder="Enter your email" required>
@@ -581,36 +168,28 @@
         </div>
     </div>
 
-    <!-- Unified Transparent Overlay -->
     <div id="top-ui-container">
-        <!-- Left Aligned Tabs -->
         <div id="top-tabs">
-            <div class="top-tab-btn active" id="tabMain" title="Go to Main Map">
+            <div class="top-tab-btn active" id="tabMain" title="Main Map">
                 <span>🏠 Main Map</span>
             </div>
-            <div class="top-tab-btn" id="tabClimate" title="Toggle Malaysia Climate Change Scenarios">
+            <div class="top-tab-btn" id="tabClimate" title="Malaysia Climate Change Scenarios">
                 <span>Malaysia Climate Change Scenarios.</span>
                 <span class="inline-arrow"></span>
             </div>
-            <div class="top-tab-btn" id="tabKL" title="Toggle Kuala Lumpur Monsoon Activity Centre">
+            <div class="top-tab-btn" id="tabKL" title="Kuala Lumpur Monsoon Activity Centre">
                 <span>Kuala Lumpur Monsoon Activity Centre.</span>
                 <span class="inline-arrow"></span>
             </div>
         </div>
-
-        <!-- Right Aligned Panel -->
         <div id="user-panel">
             <span id="user-email-display"></span>
             <button id="btn-app-logout">Log Out</button>
         </div>
     </div>
 
-    <!-- Map Containers stretch completely behind the transparent overlay -->
     <div id="map"></div>
-    <div id="map-climate"></div>
-    <div id="map-kl"></div>
 
-    <!-- Bottom Grid Container (Reoriented to 6 Rows x 1 Column) -->
     <div id="bottom-grid-container">
         <div class="grid-header">
             <span>Station Rainfall Accumulated Graphs</span>
@@ -637,70 +216,48 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
-        // --- DYNAMIC BACKGROUND INFINITE SWIPE ANIMATION ---
-        const mapImages = [
-            'World_mapTravel.jpg',
-            'World_map.jpg',
-            'clasic map_3.jpg',
-            'clasic map_2.jpg',
-            'clasic map.jpg'
-        ];
-        
+        // Background Slider
+        const mapImages = ['World_mapTravel.jpg', 'World_map.jpg', 'clasic map_3.jpg', 'clasic map_2.jpg', 'clasic map.jpg'];
         const sliderElement = document.getElementById('bg-slider');
-        
         mapImages.forEach(src => {
             const slide = document.createElement('div');
             slide.className = 'bg-slide';
             slide.style.backgroundImage = `url('${encodeURI(src)}')`;
             sliderElement.appendChild(slide);
         });
-
-        const firstClone = sliderElement.children[0].cloneNode(true);
-        sliderElement.appendChild(firstClone);
-
+        sliderElement.appendChild(sliderElement.children[0].cloneNode(true));
         let currentSlide = 0;
-        const totalOriginalImages = mapImages.length;
-        
-        function slideBackground() {
+        setInterval(() => {
             currentSlide++;
-            
             sliderElement.style.transition = 'transform 1s ease-in-out';
             sliderElement.style.transform = `translateX(-${currentSlide * 100}vw)`;
-            
-            if (currentSlide === totalOriginalImages) {
+            if (currentSlide === mapImages.length) {
                 setTimeout(() => {
                     sliderElement.style.transition = 'none';
                     currentSlide = 0;
                     sliderElement.style.transform = `translateX(0)`;
-                }, 1000); 
+                }, 1000);
             }
-        }
-        
-        setInterval(slideBackground, 3000);
+        }, 3000);
 
-        // --- SECURITY IMPLEMENTATIONS ---
+        // Security Features
         document.addEventListener('contextmenu', event => event.preventDefault());
-
-        document.addEventListener('keydown', function(e) {
-            if (e.keyCode === 123 || 
-               (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) || 
-               (e.ctrlKey && e.keyCode === 85)) { 
-                e.preventDefault();
-                return false;
+        document.addEventListener('keydown', e => {
+            if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) || (e.ctrlKey && e.keyCode === 85)) {
+                e.preventDefault(); return false;
             }
         });
+        window.addEventListener('blur', () => document.body.classList.add('blurred'));
+        window.addEventListener('focus', () => document.body.classList.remove('blurred'));
 
-        window.addEventListener('blur', function() { document.body.classList.add('blurred'); });
-        window.addEventListener('focus', function() { document.body.classList.remove('blurred'); });
-
-        // --- FIREBASE CONFIGURATION ---
+        // Firebase Auth
         var firebaseConfig = {
-          apiKey: "AIzaSyAcGx3t733bHUh-k3VFgMdcWuRMY9LERC8",
-          authDomain: "rainfall-map-f20f5.firebaseapp.com",
-          projectId: "rainfall-map-f20f5",
-          storageBucket: "rainfall-map-f20f5.firebasestorage.app",
-          messagingSenderId: "789564767872",
-          appId: "1:789564767872:web:be84f6a41a448fbc8d7065"
+            apiKey: "AIzaSyAcGx3t733bHUh-k3VFgMdcWuRMY9LERC8",
+            authDomain: "rainfall-map-f20f5.firebaseapp.com",
+            projectId: "rainfall-map-f20f5",
+            storageBucket: "rainfall-map-f20f5.firebasestorage.app",
+            messagingSenderId: "789564767872",
+            appId: "1:789564767872:web:be84f6a41a448fbc8d7065"
         };
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
@@ -715,200 +272,102 @@
         const userEmailDisplay = document.getElementById('user-email-display');
         const btnAppLogout = document.getElementById('btn-app-logout');
 
-        // --- IDLE TIMEOUT LOGIC ---
-        let idleTimer;
-        let countdownInterval;
-        const IDLE_TIME = 30000; 
-        const COUNTDOWN_TIME = 15; 
+        // Idle Timer
+        let idleTimer, countdownInterval;
+        const IDLE_TIME = 30000, COUNTDOWN_TIME = 15;
         let secondsLeft = COUNTDOWN_TIME;
         const timeoutOverlay = document.getElementById('timeout-overlay');
         const countdownDisplay = document.getElementById('countdown-timer');
 
-        function startIdleTimer() {
-            clearTimers();
-            idleTimer = setTimeout(showWarning, IDLE_TIME);
-        }
-
+        function startIdleTimer() { clearTimers(); idleTimer = setTimeout(showWarning, IDLE_TIME); }
         function showWarning() {
-            secondsLeft = COUNTDOWN_TIME;
-            countdownDisplay.innerText = secondsLeft;
+            secondsLeft = COUNTDOWN_TIME; countdownDisplay.innerText = secondsLeft;
             timeoutOverlay.style.display = 'flex';
-            
             countdownInterval = setInterval(() => {
-                secondsLeft--;
-                countdownDisplay.innerText = secondsLeft;
-                
+                secondsLeft--; countdownDisplay.innerText = secondsLeft;
                 if (secondsLeft <= 0) {
                     clearTimers();
-                    auth.signOut().then(() => {
-                        timeoutOverlay.style.display = 'none';
-                        authMessage.innerText = "You were logged out due to inactivity.";
-                    });
+                    auth.signOut().then(() => { timeoutOverlay.style.display = 'none'; authMessage.innerText = "You were logged out due to inactivity."; });
                 }
             }, 1000);
         }
-
-        function clearTimers() {
-            clearTimeout(idleTimer);
-            clearInterval(countdownInterval);
-            timeoutOverlay.style.display = 'none';
-        }
-
-        function resetTimer() {
-            if (auth.currentUser) { startIdleTimer(); }
-        }
-
-        ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'].forEach(evt => {
-            document.addEventListener(evt, resetTimer, true);
-        });
+        function clearTimers() { clearTimeout(idleTimer); clearInterval(countdownInterval); timeoutOverlay.style.display = 'none'; }
+        function resetTimer() { if (auth.currentUser) startIdleTimer(); }
+        ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'].forEach(evt => document.addEventListener(evt, resetTimer, true));
 
         auth.onAuthStateChanged(user => {
             if (user && user.emailVerified) {
                 authOverlay.style.display = 'none';
-                topUiContainer.style.display = 'block'; 
+                topUiContainer.style.display = 'block';
                 userEmailDisplay.innerText = user.email;
                 initializeMap();
-                startIdleTimer(); 
+                startIdleTimer();
             } else if (user) {
                 authMessage.innerText = "Please check your email and verify your account before logging in.";
-                auth.signOut();
-                clearTimers();
+                auth.signOut(); clearTimers();
             } else {
                 authOverlay.style.display = 'flex';
-                topUiContainer.style.display = 'none'; 
-                clearTimers(); 
+                topUiContainer.style.display = 'none';
+                clearTimers();
             }
         });
 
         btnRegister.addEventListener('click', () => {
             authMessage.innerText = "Processing...";
             auth.createUserWithEmailAndPassword(emailInput.value, passInput.value)
-                .then(userCredential => {
-                    userCredential.user.sendEmailVerification().then(() => {
-                        authMessage.innerText = "Registration successful! Please check your email.";
-                        auth.signOut();
-                    });
-                }).catch(error => { authMessage.innerText = error.message; });
+                .then(res => { res.user.sendEmailVerification().then(() => { authMessage.innerText = "Registration successful! Please check your email."; auth.signOut(); }); })
+                .catch(err => authMessage.innerText = err.message);
         });
-
         btnLogin.addEventListener('click', () => {
             authMessage.innerText = "Logging in...";
-            auth.signInWithEmailAndPassword(emailInput.value, passInput.value)
-                .catch(error => { authMessage.innerText = error.message; });
+            auth.signInWithEmailAndPassword(emailInput.value, passInput.value).catch(err => authMessage.innerText = err.message);
+        });
+        btnAppLogout.addEventListener('click', () => {
+            auth.signOut().then(() => { emailInput.value = ''; passInput.value = ''; authMessage.innerText = 'You have logged out successfully.'; });
         });
 
-        btnAppLogout.addEventListener('click', () => {
-            auth.signOut().then(() => {
-                emailInput.value = ''; passInput.value = ''; authMessage.innerText = 'You have logged out successfully.';
-            });
-        });
+        // Tab Navigation
+        document.getElementById('tabMain').addEventListener('click', () => window.location.href = 'index.html');
+        document.getElementById('tabClimate').addEventListener('click', () => window.location.href = 'index_2.html');
+        document.getElementById('tabKL').addEventListener('click', () => window.location.href = 'index_3.html');
 
         window.toggleAccordion = function(contentId, iconId, headerElement) {
-            var content = document.getElementById(contentId);
-            var icon = document.getElementById(iconId);
+            var content = document.getElementById(contentId), icon = document.getElementById(iconId);
             if (content.classList.contains('show')) {
-                content.classList.remove('show');
-                icon.classList.remove('open');
-                headerElement.classList.remove('active');
+                content.classList.remove('show'); icon.classList.remove('open'); headerElement.classList.remove('active');
             } else {
-                content.classList.add('show');
-                icon.classList.add('open');
-                headerElement.classList.add('active');
+                content.classList.add('show'); icon.classList.add('open'); headerElement.classList.add('active');
             }
         };
 
-        let isMapLoaded = false;
-        let mapClimate = null;
-        let mapKL = null;
-        let activeMapId = 'map';
-
-        function initAlternativeMaps() {
-            if (!mapClimate) {
-                mapClimate = L.map('map-climate', { center: [2.5, 103.0], zoom: 8 });
-                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, attribution: 'Tiles &copy; Esri' }).addTo(mapClimate);
-                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 }).addTo(mapClimate);
-            }
-            if (!mapKL) {
-                mapKL = L.map('map-kl', { center: [3.1390, 101.6869], zoom: 10 }); 
-                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, attribution: 'Tiles &copy; Esri' }).addTo(mapKL);
-                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 }).addTo(mapKL);
-            }
-        }
-
-        function toggleMap(targetMapId) {
-            if (activeMapId === targetMapId) {
-                targetMapId = 'map';
-            }
-
-            document.getElementById('map').style.display = 'none';
-            document.getElementById('map-climate').style.display = 'none';
-            document.getElementById('map-kl').style.display = 'none';
-            
-            document.getElementById(targetMapId).style.display = 'block';
-            activeMapId = targetMapId;
-
-            document.getElementById('tabMain').classList.remove('active');
-            document.getElementById('tabClimate').classList.remove('active');
-            document.getElementById('tabKL').classList.remove('active');
-
-            if (targetMapId === 'map-climate') {
-                document.getElementById('tabClimate').classList.add('active');
-            } else if (targetMapId === 'map-kl') {
-                document.getElementById('tabKL').classList.add('active');
-            } else {
-                document.getElementById('tabMain').classList.add('active');
-            }
-
-            if (targetMapId !== 'map') {
-                initAlternativeMaps();
-                if (targetMapId === 'map-climate') mapClimate.invalidateSize();
-                if (targetMapId === 'map-kl') mapKL.invalidateSize();
-            }
-        }
-
-        document.getElementById('tabMain').addEventListener('click', () => toggleMap('map'));
-        document.getElementById('tabClimate').addEventListener('click', () => toggleMap('map-climate'));
-        document.getElementById('tabKL').addEventListener('click', () => toggleMap('map-kl'));
-
-        // --- GRID GRAPH VARIABLES ---
         let activeGridCharts = [null, null, null, null, null, null];
         let gridStationNames = [null, null, null, null, null, null];
-
         document.addEventListener('click', function(e) {
-            // Logic to clear the grid 
             if(e.target && e.target.id === 'btnClearGrid') {
                 for(let i=0; i<6; i++) {
                     if(activeGridCharts[i]) activeGridCharts[i].destroy();
-                    activeGridCharts[i] = null;
-                    gridStationNames[i] = null;
+                    activeGridCharts[i] = null; gridStationNames[i] = null;
                     document.getElementById('grid-box-'+i).innerHTML = 'Empty';
                 }
             }
-            // Logic to close the grid entirely
             if(e.target && e.target.id === 'btnCloseGrid') {
                 document.getElementById('bottom-grid-container').style.display = 'none';
             }
         });
 
+        let isMapLoaded = false;
         function initializeMap() {
-            if (isMapLoaded) return; 
-            isMapLoaded = true;
+            if (isMapLoaded) return; isMapLoaded = true;
 
             var darkBase = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, attribution: 'Tiles &copy; Esri' });
             var darkLabels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 });
             var darkNightWithLabels = L.layerGroup([darkBase, darkLabels]);
-
             var blueOcean = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors', maxZoom: 19 });
             var satImage = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri' });
             var satLabels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}');
             var satelliteWithLabels = L.layerGroup([satImage, satLabels]);
 
-            var baseMaps = { 
-                "Dark Night": darkNightWithLabels, 
-                "Blue Ocean": blueOcean, 
-                "Satellite": satelliteWithLabels 
-            };
-            
+            var baseMaps = { "Dark Night": darkNightWithLabels, "Blue Ocean": blueOcean, "Satellite": satelliteWithLabels };
             var map = L.map('map', { center: [2.5, 103.0], zoom: 8, layers: [darkNightWithLabels] });
             L.control.layers(baseMaps, null, {position: 'topleft'}).addTo(map);
 
@@ -932,30 +391,26 @@
                 else {
                     for (let key in properties) {
                         let k = key.toLowerCase();
-                        if (k.includes('rain') || k.includes('precip') || k.includes('hujan')) {
-                            val = parseFloat(properties[key]);
-                            break;
-                        }
+                        if (k.includes('rain') || k.includes('precip') || k.includes('hujan')) { val = parseFloat(properties[key]); break; }
                     }
                 }
-                
                 if (isNaN(val) || val === -99.9 || val === -999 || val === -999.9) return 0;
-                return val; 
+                return val;
             }
 
             var eventLegend = L.control({position: 'bottomleft'});
-            eventLegend.onAdd = function (map) {
+            eventLegend.onAdd = function () {
                 var div = L.DomUtil.create('div', 'info legend'), grades = [0, 20, 40, 60, 80], labels = ['0 - 20 mm', '20 - 40 mm', '40 - 60 mm', '60 - 80 mm', '80+ mm'];
                 div.innerHTML = '<strong>Event Rainfall Amount</strong><br><br>';
                 for (var i = 0; i < grades.length; i++) {
-                    var r = getRadius(grades[i]); var diameter = r * 2;
+                    var r = getRadius(grades[i]), diameter = r * 2;
                     div.innerHTML += '<div class="legend-item" style="min-height:50px;"><div class="legend-circle-container"><div class="legend-circle" style="background:' + getEventColor(grades[i]) + '; width:' + diameter + 'px; height:' + diameter + 'px;"></div></div><span>' + labels[i] + '</span></div>';
                 }
                 return div;
             };
 
             var meanLegend = L.control({position: 'bottomleft'});
-            meanLegend.onAdd = function (map) {
+            meanLegend.onAdd = function () {
                 var div = L.DomUtil.create('div', 'info legend'), grades = [30, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 1000];
                 div.innerHTML = '<strong>Mean Monthly Rainfall (mm)</strong><br><br>';
                 for (var i = 0; i < grades.length; i++) {
@@ -964,32 +419,18 @@
                 return div;
             };
 
-            let activeEvents = 0;
-            let activeMeans = 0;
-
-            map.on('overlayadd', function(e) {
-                if (e.layer.groupType === 'event') activeEvents++;
-                if (e.layer.groupType === 'mean') activeMeans++;
-                toggleLegends();
-            });
-
-            map.on('overlayremove', function(e) {
-                if (e.layer.groupType === 'event') activeEvents--;
-                if (e.layer.groupType === 'mean') activeMeans--;
-                toggleLegends();
-            });
-
+            let activeEvents = 0, activeMeans = 0;
+            map.on('overlayadd', e => { if (e.layer.groupType === 'event') activeEvents++; if (e.layer.groupType === 'mean') activeMeans++; toggleLegends(); });
+            map.on('overlayremove', e => { if (e.layer.groupType === 'event') activeEvents--; if (e.layer.groupType === 'mean') activeMeans--; toggleLegends(); });
             function toggleLegends() {
-                if (activeEvents > 0) { map.addControl(eventLegend); } else { map.removeControl(eventLegend); }
-                if (activeMeans > 0) { map.addControl(meanLegend); } else { map.removeControl(meanLegend); }
+                if (activeEvents > 0) map.addControl(eventLegend); else map.removeControl(eventLegend);
+                if (activeMeans > 0) map.addControl(meanLegend); else map.removeControl(meanLegend);
             }
 
             var accordionControl = L.control({position: 'topright'});
-            accordionControl.onAdd = function (map) {
+            accordionControl.onAdd = function () {
                 var div = L.DomUtil.create('div', 'custom-control-panel leaflet-control');
-                L.DomEvent.disableClickPropagation(div);
-                L.DomEvent.disableScrollPropagation(div);
-
+                L.DomEvent.disableClickPropagation(div); L.DomEvent.disableScrollPropagation(div);
                 div.innerHTML = `
                     <div class="accordion-header active" onclick="window.toggleAccordion('content-1', 'icon-1', this)">
                         <span>1) Rainfall Event</span><span id="icon-1" class="triangle open">▼</span>
@@ -1022,18 +463,10 @@
                         <div style="font-size: 11px; color: #e74c3c; margin-bottom: 8px; font-weight: bold;">Note: max is 6 stations</div>
                         <div class="monthly-control-box">
                             <select id="filter-month-simple">
-                                <option value="01">JAN</option>
-                                <option value="02">FEB</option>
-                                <option value="03">MAR</option>
-                                <option value="04">APR</option>
-                                <option value="05">MAY</option>
-                                <option value="06">JUN</option>
-                                <option value="07">JUL</option>
-                                <option value="08">AUG</option>
-                                <option value="09">SEP</option>
-                                <option value="10">OCT</option>
-                                <option value="11">NOV</option>
-                                <option value="12">DEC</option>
+                                <option value="01">JAN</option><option value="02">FEB</option><option value="03">MAR</option>
+                                <option value="04">APR</option><option value="05">MAY</option><option value="06">JUN</option>
+                                <option value="07">JUL</option><option value="08">AUG</option><option value="09">SEP</option>
+                                <option value="10">OCT</option><option value="11">NOV</option><option value="12">DEC</option>
                             </select>
                             <button id="btnLoadDaily" class="btn-animate" style="background:#e84393; margin-top: 5px;">Load Data</button>
                         </div>
@@ -1061,547 +494,253 @@
             accordionControl.addTo(map);
 
             let customDataLayer = L.layerGroup();
-            
-            // --- DAILY DATA LOGIC (PINK MARKERS) ---
             document.getElementById('btnLoadDaily').addEventListener('click', function() {
-                const year = "2024"; // Defaulting to 2024 as the base year for the daily fetch string
-                const month = document.getElementById('filter-month-simple').value;
+                const year = "2024", month = document.getElementById('filter-month-simple').value;
                 const statusLabel = document.getElementById('data-status-daily');
-                
-                statusLabel.innerText = "Fetching Daily Data...";
-                statusLabel.style.color = "#f39c12";
+                statusLabel.innerText = "Fetching Daily Data..."; statusLabel.style.color = "#f39c12";
                 document.getElementById('bottom-grid-container').style.display = 'block';
 
                 const githubRawUrl = `https://raw.githubusercontent.com/Nurizana/rainfall-map/main/Data1/Hourly_PMSS_${year}${month}_WCoordinate.csv`;
-
                 Papa.parse(githubRawUrl, {
-                    download: true, 
-                    header: true, 
-                    dynamicTyping: true, 
-                    skipEmptyLines: true,
+                    download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
                     complete: function(results) {
-                        map.removeLayer(customDataLayer);
-                        customDataLayer = L.layerGroup();
-                        
-                        var data = results.data;
+                        map.removeLayer(customDataLayer); customDataLayer = L.layerGroup();
                         var stationGroups = {};
-
-                        data.forEach(row => {
+                        results.data.forEach(row => {
                             if (!row.LATITUDE || !row.LONGITUDE) return;
-
-                            let stnId = row['WMOINDEX'];
-                            if (!stnId) return;
-
+                            let stnId = row['WMOINDEX']; if (!stnId) return;
                             let stnName = row['STATION NAME'] || String(stnId);
-                            
-                            // Group by standard WMOINDEX instead of inconsistent station names
                             if (!stationGroups[stnId]) {
-                                stationGroups[stnId] = { 
-                                    name: stnName,
-                                    lat: parseFloat(row.LATITUDE), 
-                                    lon: parseFloat(row.LONGITUDE), 
-                                    dailyData: {}, sum: 0 
-                                };
+                                stationGroups[stnId] = { name: stnName, lat: parseFloat(row.LATITUDE), lon: parseFloat(row.LONGITUDE), dailyData: {}, sum: 0 };
                             } else if (stnName.length > stationGroups[stnId].name.length) {
-                                // Keep the longest (most descriptive) station name found
                                 stationGroups[stnId].name = stnName;
                             }
-                            
-                            let rawRain = parseFloat(row.RAIN);
-                            let day = parseInt(row.DAY);
-                            
+                            let rawRain = parseFloat(row.RAIN), day = parseInt(row.DAY);
                             if (!isNaN(day)) {
                                 let isDefective = (rawRain === -99.9 || rawRain === -999 || rawRain === -999.9);
                                 let validRain = (!isNaN(rawRain) && !isDefective) ? rawRain : null;
-                                
                                 if (stationGroups[stnId].dailyData[day] === undefined) {
                                     stationGroups[stnId].dailyData[day] = validRain;
                                 } else if (validRain !== null) {
-                                    if (stationGroups[stnId].dailyData[day] === null) {
-                                        stationGroups[stnId].dailyData[day] = validRain;
-                                    } else {
-                                        stationGroups[stnId].dailyData[day] += validRain;
-                                    }
+                                    if (stationGroups[stnId].dailyData[day] === null) stationGroups[stnId].dailyData[day] = validRain;
+                                    else stationGroups[stnId].dailyData[day] += validRain;
                                 }
-
-                                if (validRain !== null) {
-                                    stationGroups[stnId].sum += validRain;
-                                }
+                                if (validRain !== null) stationGroups[stnId].sum += validRain;
                             }
                         });
-
                         let stationCount = Object.keys(stationGroups).length;
-                        if(stationCount === 0) {
-                            statusLabel.innerText = "No data found for this selection.";
-                            statusLabel.style.color = "#e74c3c";
-                            return;
-                        }
+                        if(stationCount === 0) { statusLabel.innerText = "No data found."; statusLabel.style.color = "#e74c3c"; return; }
 
                         Object.keys(stationGroups).forEach((stnId, idx) => {
-                            let stn = stationGroups[stnId];
-                            let displayName = stn.name;
-                            
-                            var marker = L.circleMarker([stn.lat, stn.lon], {
-                                radius: 8, fillColor: '#ff69b4', color: "#000", weight: 1, opacity: 1, fillOpacity: 0.9 
-                            });
-                            
+                            let stn = stationGroups[stnId], displayName = stn.name;
+                            var marker = L.circleMarker([stn.lat, stn.lon], { radius: 8, fillColor: '#ff69b4', color: "#000", weight: 1, opacity: 1, fillOpacity: 0.9 });
                             let canvasId = 'chart-' + idx;
-                            let popupContent = `
-                                <div style="width:250px;">
-                                    <b>${displayName}</b><br/>
-                                    Total Rain: ${stn.sum.toFixed(2)} mm<br/>
-                                    <canvas id="${canvasId}" width="250" height="150"></canvas>
-                                    <i>Click marker to pin to bottom grid</i>
-                                </div>
-                            `;
-                            
-                            marker.bindPopup(popupContent);
+                            marker.bindPopup(`<div style="width:250px;"><b>${displayName}</b><br/>Total Rain: ${stn.sum.toFixed(2)} mm<br/><canvas id="${canvasId}" width="250" height="150"></canvas><i>Click marker to pin to bottom grid</i></div>`);
                             marker.bindTooltip(displayName, { permanent: true, direction: 'right', className: 'station-label', offset: [8, 0] });
-                            
                             marker.on('popupopen', function() {
-                                let labels = [];
-                                let readings = [];
-                                let days = Object.keys(stn.dailyData).map(Number).sort((a, b) => a - b);
-                                
-                                days.forEach(d => {
-                                    labels.push(d.toString());
-                                    readings.push(stn.dailyData[d]);
-                                });
-
+                                let labels = [], readings = [], days = Object.keys(stn.dailyData).map(Number).sort((a, b) => a - b);
+                                days.forEach(d => { labels.push(d.toString()); readings.push(stn.dailyData[d]); });
                                 var ctx = document.getElementById(canvasId).getContext('2d');
-                                new Chart(ctx, {
-                                    type: 'bar',
-                                    data: {
-                                        labels: labels, 
-                                        datasets: [{
-                                            label: 'Rainfall (mm)',
-                                            data: readings,
-                                            backgroundColor: 'rgba(255, 105, 180, 0.6)', 
-                                            borderColor: 'rgba(255, 20, 147, 1)', 
-                                            borderWidth: 1
-                                        }]
-                                    },
-                                    options: { scales: { y: { beginAtZero: true } } }
-                                });
+                                new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [{ label: 'Rainfall (mm)', data: readings, backgroundColor: 'rgba(255, 105, 180, 0.6)', borderColor: 'rgba(255, 20, 147, 1)', borderWidth: 1 }] }, options: { scales: { y: { beginAtZero: true } } } });
                             });
-
                             marker.on('click', function() {
                                 if(gridStationNames.includes(displayName)) return;
                                 let emptyIndex = gridStationNames.findIndex(name => name === null);
-                                
                                 if(emptyIndex !== -1) {
                                     gridStationNames[emptyIndex] = displayName;
-                                    let box = document.getElementById('grid-box-' + emptyIndex);
-                                    box.innerHTML = `<canvas id="canvas-grid-${emptyIndex}"></canvas>`;
-
-                                    let labels = [];
-                                    let readings = [];
-                                    let days = Object.keys(stn.dailyData).map(Number).sort((a, b) => a - b);
-                                    days.forEach(d => {
-                                        labels.push(d.toString());
-                                        readings.push(stn.dailyData[d]);
-                                    });
-
+                                    document.getElementById('grid-box-' + emptyIndex).innerHTML = `<canvas id="canvas-grid-${emptyIndex}"></canvas>`;
+                                    let labels = [], readings = [], days = Object.keys(stn.dailyData).map(Number).sort((a, b) => a - b);
+                                    days.forEach(d => { labels.push(d.toString()); readings.push(stn.dailyData[d]); });
                                     let ctxGrid = document.getElementById(`canvas-grid-${emptyIndex}`).getContext('2d');
                                     activeGridCharts[emptyIndex] = new Chart(ctxGrid, {
-                                        type: 'bar',
-                                        data: {
-                                            labels: labels,
-                                            datasets: [{
-                                                data: readings,
-                                                backgroundColor: 'rgba(255, 105, 180, 0.8)' // Pink fill for daily grid
-                                            }]
-                                        },
-                                        options: {
-                                            responsive: true, maintainAspectRatio: false,
-                                            plugins: {
-                                                legend: { display: false },
-                                                title: { display: true, text: displayName + ' (Daily)', font: {size: 11}, padding: { top: 2, bottom: 2 } }
-                                            },
-                                            scales: {
-                                                x: { ticks: { font: { size: 8 } } },
-                                                y: { beginAtZero: true, ticks: { font: { size: 8 } } }
-                                            }
-                                        }
+                                        type: 'bar', data: { labels: labels, datasets: [{ data: readings, backgroundColor: 'rgba(255, 105, 180, 0.8)' }] },
+                                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, title: { display: true, text: displayName + ' (Daily)', font: {size: 11} } }, scales: { x: { ticks: { font: { size: 8 } } }, y: { beginAtZero: true, ticks: { font: { size: 8 } } } } }
                                     });
-                                } else {
-                                    alert("Maximum of 6 stations can be displayed in the grid. Please clear the graphs to add more.");
-                                }
+                                } else alert("Maximum of 6 stations can be displayed in the grid.");
                             });
-
                             customDataLayer.addLayer(marker);
                         });
-
                         customDataLayer.addTo(map);
-                        statusLabel.innerText = `Loaded ${stationCount} stations successfully.`;
-                        statusLabel.style.color = "#27ae60";
+                        statusLabel.innerText = `Loaded ${stationCount} stations successfully.`; statusLabel.style.color = "#27ae60";
                     },
-                    error: function(err) {
-                        statusLabel.innerText = "Error loading CSV. Check repo/file path.";
-                        statusLabel.style.color = "#e74c3c";
-                        console.error(err);
-                    }
+                    error: function(err) { statusLabel.innerText = "Error loading CSV."; statusLabel.style.color = "#e74c3c"; }
                 });
             });
 
-            // --- MONTHLY DATA LOGIC (PURPLE MARKERS) ---
             document.getElementById('btnLoadMonthlySum').addEventListener('click', function() {
                 const year = document.getElementById('filter-year-monthly').value;
                 const statusLabel = document.getElementById('data-status-monthly');
-                
-                statusLabel.innerText = "Fetching Monthly Data (this may take a moment)...";
-                statusLabel.style.color = "#f39c12";
-                
-                // Show bottom grid panel when interaction begins
+                statusLabel.innerText = "Fetching Monthly Data..."; statusLabel.style.color = "#f39c12";
                 document.getElementById('bottom-grid-container').style.display = 'block';
 
-                let fetchPromises = [];
-                // Check if the year selected is 2025 to grab from Data2, else fallback to Data1
-                let folder = (year === "2025") ? "Data2" : "Data1";
-                
-                // Loop 1 to 12 to pull all available months for the year
+                let fetchPromises = [], folder = (year === "2025") ? "Data2" : "Data1";
                 for (let i = 1; i <= 12; i++) {
                     let monthStr = i.toString().padStart(2, '0');
                     let url = `https://raw.githubusercontent.com/Nurizana/rainfall-map/main/${folder}/Hourly_PMSS_${year}${monthStr}_WCoordinate.csv`;
-                    
-                    fetchPromises.push(new Promise((resolve) => {
-                        Papa.parse(url, {
-                            download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
-                            complete: function(results) { 
-                                resolve({monthIndex: i-1, data: results.data}); 
-                            },
-                            error: function(err) { 
-                                // Resolve empty array if a specific month file doesn't exist yet
-                                resolve({monthIndex: i-1, data: []}); 
-                            } 
-                        });
+                    fetchPromises.push(new Promise(resolve => {
+                        Papa.parse(url, { download: true, header: true, dynamicTyping: true, skipEmptyLines: true, complete: res => resolve({monthIndex: i-1, data: res.data}), error: () => resolve({monthIndex: i-1, data: []}) });
                     }));
                 }
 
                 Promise.all(fetchPromises).then(results => {
-                    map.removeLayer(customDataLayer);
-                    customDataLayer = L.layerGroup();
-                    
+                    map.removeLayer(customDataLayer); customDataLayer = L.layerGroup();
                     var stationGroups = {};
-
-                    // Aggregate all months 
                     results.forEach(monthRes => {
                         let mIndex = monthRes.monthIndex;
                         monthRes.data.forEach(row => {
                             if (!row.LATITUDE || !row.LONGITUDE) return;
-
-                            let stnId = row['WMOINDEX'];
-                            if (!stnId) return;
-
+                            let stnId = row['WMOINDEX']; if (!stnId) return;
                             let stnName = row['STATION NAME'] || String(stnId);
-                            
-                            // Group by standard WMOINDEX instead of inconsistent station names
                             if (!stationGroups[stnId]) {
-                                stationGroups[stnId] = { 
-                                    name: stnName,
-                                    lat: parseFloat(row.LATITUDE), 
-                                    lon: parseFloat(row.LONGITUDE), 
-                                    monthlySums: [null, null, null, null, null, null, null, null, null, null, null, null], 
-                                    totalSum: 0 
-                                };
+                                stationGroups[stnId] = { name: stnName, lat: parseFloat(row.LATITUDE), lon: parseFloat(row.LONGITUDE), monthlySums: Array(12).fill(null), totalSum: 0 };
                             } else if (stnName.length > stationGroups[stnId].name.length) {
-                                // Keep the longest (most descriptive) station name found
                                 stationGroups[stnId].name = stnName;
                             }
-                            
                             let rawRain = parseFloat(row.RAIN);
-                            let isDefective = (rawRain === -99.9 || rawRain === -999 || rawRain === -999.9);
-                            
-                            // Check the calculation for the monthly rainfall sum and exclude defective values
-                            if (!isNaN(rawRain) && !isDefective) {
-                                if (stationGroups[stnId].monthlySums[mIndex] === null) {
-                                    stationGroups[stnId].monthlySums[mIndex] = rawRain;
-                                } else {
-                                    stationGroups[stnId].monthlySums[mIndex] += rawRain;
-                                }
+                            if (!isNaN(rawRain) && ![ -99.9, -999, -999.9 ].includes(rawRain)) {
+                                if (stationGroups[stnId].monthlySums[mIndex] === null) stationGroups[stnId].monthlySums[mIndex] = rawRain;
+                                else stationGroups[stnId].monthlySums[mIndex] += rawRain;
                                 stationGroups[stnId].totalSum += rawRain;
                             }
                         });
                     });
 
                     let stationCount = Object.keys(stationGroups).length;
-                    if(stationCount === 0) {
-                        statusLabel.innerText = "No data found for this year.";
-                        statusLabel.style.color = "#e74c3c";
-                        return;
-                    }
+                    if(stationCount === 0) { statusLabel.innerText = "No data found."; statusLabel.style.color = "#e74c3c"; return; }
 
                     Object.keys(stationGroups).forEach((stnId) => {
-                        let stn = stationGroups[stnId];
-                        let displayName = stn.name;
-                        
-                        // Purple Marker for Monthly Load Data
-                        var marker = L.circleMarker([stn.lat, stn.lon], {
-                            radius: 8, fillColor: '#8e44ad', color: "#000", weight: 1, opacity: 1, fillOpacity: 0.9 
-                        });
-                        
-                        let popupContent = `
-                            <div style="width:200px;">
-                                <b>${displayName}</b><br/>
-                                Yearly Total: ${stn.totalSum.toFixed(2)} mm<br/>
-                                <i>Click marker to pin monthly sums to bottom grid</i>
-                            </div>
-                        `;
-                        
-                        marker.bindPopup(popupContent);
+                        let stn = stationGroups[stnId], displayName = stn.name;
+                        var marker = L.circleMarker([stn.lat, stn.lon], { radius: 8, fillColor: '#8e44ad', color: "#000", weight: 1, opacity: 1, fillOpacity: 0.9 });
+                        marker.bindPopup(`<div style="width:200px;"><b>${displayName}</b><br/>Yearly Total: ${stn.totalSum.toFixed(2)} mm<br/><i>Click marker to pin monthly sums to bottom grid</i></div>`);
                         marker.bindTooltip(displayName, { permanent: true, direction: 'right', className: 'station-label', offset: [8, 0] });
-                        
                         marker.on('click', function() {
                             if(gridStationNames.includes(displayName)) return;
-                            
                             let emptyIndex = gridStationNames.findIndex(name => name === null);
-                            
                             if(emptyIndex !== -1) {
                                 gridStationNames[emptyIndex] = displayName;
-                                let box = document.getElementById('grid-box-' + emptyIndex);
-                                box.innerHTML = `<canvas id="canvas-grid-${emptyIndex}"></canvas>`;
-
+                                document.getElementById('grid-box-' + emptyIndex).innerHTML = `<canvas id="canvas-grid-${emptyIndex}"></canvas>`;
                                 let labels = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-                                // Only format values if they aren't strictly null, otherwise pass null to skip drawing the bar
                                 let readings = stn.monthlySums.map(v => v !== null ? v.toFixed(2) : null);
-
                                 let ctxGrid = document.getElementById(`canvas-grid-${emptyIndex}`).getContext('2d');
                                 activeGridCharts[emptyIndex] = new Chart(ctxGrid, {
-                                    type: 'bar',
-                                    data: {
-                                        labels: labels,
-                                        datasets: [{
-                                            data: readings,
-                                            backgroundColor: 'rgba(142, 68, 173, 0.8)' // Purple fill for monthly grid
-                                        }]
-                                    },
-                                    options: {
-                                        responsive: true,
-                                        maintainAspectRatio: false,
-                                        plugins: {
-                                            legend: { display: false },
-                                            title: { display: true, text: displayName + ' (Monthly)', font: {size: 11}, padding: { top: 2, bottom: 2 } }
-                                        },
-                                        scales: {
-                                            x: { ticks: { font: { size: 8 } } },
-                                            y: { beginAtZero: true, ticks: { font: { size: 8 } } }
-                                        }
-                                    }
+                                    type: 'bar', data: { labels: labels, datasets: [{ data: readings, backgroundColor: 'rgba(142, 68, 173, 0.8)' }] },
+                                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, title: { display: true, text: displayName + ' (Monthly)', font: {size: 11} } }, scales: { x: { ticks: { font: { size: 8 } } }, y: { beginAtZero: true, ticks: { font: { size: 8 } } } } }
                                 });
-                            } else {
-                                alert("Maximum of 6 stations can be displayed in the grid. Please clear the graphs to add more.");
-                            }
+                            } else alert("Maximum of 6 stations can be displayed in the grid.");
                         });
-
                         customDataLayer.addLayer(marker);
                     });
-
                     customDataLayer.addTo(map);
-                    statusLabel.innerText = `Loaded ${stationCount} stations for ${year} successfully.`;
-                    statusLabel.style.color = "#27ae60";
+                    statusLabel.innerText = `Loaded ${stationCount} stations for ${year} successfully.`; statusLabel.style.color = "#27ae60";
                 });
             });
 
             Papa.parse("data.csv", {
                 download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
                 complete: function(results) {
-                    var data = results.data; 
-                    var dateColumns = Object.keys(data[0]).slice(4); 
-                    var content1 = document.getElementById('content-1');
-                    
+                    var data = results.data, dateColumns = Object.keys(data[0]).slice(4), content1 = document.getElementById('content-1');
                     dateColumns.forEach(function(date) {
-                        var layerGroup = L.layerGroup();
-                        layerGroup.groupType = 'event'; 
-
+                        var layerGroup = L.layerGroup(); layerGroup.groupType = 'event';
                         data.forEach(function(row) {
                             if (row.Latitude && row.Longitude) {
-                                var rainfall = row[date] || 0; 
-                                var currentRadius = getRadius(rainfall);
-                                var marker = L.circleMarker([row.Latitude, row.Longitude], {
-                                    radius: currentRadius, fillColor: getEventColor(rainfall), color: "#000", weight: 1, opacity: 1, fillOpacity: 0.8 
-                                });
+                                var rainfall = row[date] || 0, currentRadius = getRadius(rainfall);
+                                var marker = L.circleMarker([row.Latitude, row.Longitude], { radius: currentRadius, fillColor: getEventColor(rainfall), color: "#000", weight: 1, opacity: 1, fillOpacity: 0.8 });
                                 marker.bindPopup("<b>" + row['Station Name'] + "</b><br>Date: " + date + "<br>Rainfall: " + getEventRainfallRange(rainfall));
                                 marker.bindTooltip(row['Station Name'], { permanent: true, direction: 'right', className: 'station-label', offset: [currentRadius, 0] });
                                 layerGroup.addLayer(marker);
                             }
                         });
-
-                        var label = document.createElement('label');
-                        label.className = 'layer-item';
-                        var cb = document.createElement('input');
-                        cb.type = 'checkbox';
+                        var label = document.createElement('label'); label.className = 'layer-item';
+                        var cb = document.createElement('input'); cb.type = 'checkbox';
                         cb.addEventListener('change', function() {
                             if (this.checked) { map.addLayer(layerGroup); map.fire('overlayadd', {layer: layerGroup}); } 
                             else { map.removeLayer(layerGroup); map.fire('overlayremove', {layer: layerGroup}); }
                         });
-                        label.appendChild(cb);
-                        label.appendChild(document.createTextNode(" " + date));
-                        content1.appendChild(label);
+                        label.appendChild(cb); label.appendChild(document.createTextNode(" " + date)); content1.appendChild(label);
                     });
                 }
             });
 
             const months = ['JAN', 'FEB', 'MAC', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
             var content2 = document.getElementById('content-2');
-
-            const shapefilePromises = months.map(month => {
-                return shp(`shapefile/${month}_2.zip`).catch(err => { return null; });
-            });
-
-            Promise.all(shapefilePromises).then(results => {
+            Promise.all(months.map(m => shp(`shapefile/${m}_2.zip`).catch(() => null))).then(results => {
                 results.forEach((geojson, index) => {
-                    if (!geojson) return; 
+                    if (!geojson) return;
                     let month = months[index];
-                    
                     var layerGroup = L.geoJSON(geojson, {
-                        style: function(feature) {
-                            var rainfall = getRainfallValue(feature.properties);
-                            return { fillColor: getPolygonColor(rainfall), weight: 1.5, color: '#333', fillOpacity: 0.7 };
-                        },
-                        onEachFeature: function(feature, layer) {
-                            var val = getRainfallValue(feature.properties);
-                            if (val > 0) {
-                                layer.bindTooltip(String(val) + " mm", { direction: "center", className: "contour-label" });
-                            }
+                        style: f => ({ fillColor: getPolygonColor(getRainfallValue(f.properties)), weight: 1.5, color: '#333', fillOpacity: 0.7 }),
+                        onEachFeature: (f, layer) => {
+                            var val = getRainfallValue(f.properties);
+                            if (val > 0) layer.bindTooltip(String(val) + " mm", { direction: "center", className: "contour-label" });
                         }
                     });
-                    
-                    layerGroup.groupType = 'mean'; 
-                    
-                    var label = document.createElement('label');
-                    label.className = 'layer-item';
-                    var cb = document.createElement('input');
-                    cb.type = 'checkbox';
+                    layerGroup.groupType = 'mean';
+                    var label = document.createElement('label'); label.className = 'layer-item';
+                    var cb = document.createElement('input'); cb.type = 'checkbox';
                     cb.addEventListener('change', function() {
                         if (this.checked) { map.addLayer(layerGroup); map.fire('overlayadd', {layer: layerGroup}); } 
                         else { map.removeLayer(layerGroup); map.fire('overlayremove', {layer: layerGroup}); }
                     });
-                    label.appendChild(cb);
-                    label.appendChild(document.createTextNode(" " + month));
-                    content2.appendChild(label);
+                    label.appendChild(cb); label.appendChild(document.createTextNode(" " + month)); content2.appendChild(label);
                 });
             });
 
-            const stationCsvUrl = "station list/Start Year Principal Station - Principal Station.csv"; 
-            
-            Papa.parse(stationCsvUrl, {
-                download: true,
-                header: true,
-                dynamicTyping: true,
-                skipEmptyLines: true,
-                transformHeader: function(header) { return header.trim(); },
+            Papa.parse("station list/Start Year Principal Station - Principal Station.csv", {
+                download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
+                transformHeader: h => h.trim(),
                 complete: function(results) {
-                    var data = results.data;
                     var yearGroups = {};
-
-                    data.forEach(function(row) {
-                        let stnNum = row['STATION NUMBER'];
-                        let stnName = row['STATION NAME'];
-                        let lat = parseFloat(row['LAT']);
-                        let lon = parseFloat(row['LONG']);
-                        let year = row['STATION START YEAR'];
-                        
+                    results.data.forEach(row => {
+                        let stnNum = row['STATION NUMBER'], stnName = row['STATION NAME'], lat = parseFloat(row['LAT']), lon = parseFloat(row['LONG']), year = row['STATION START YEAR'];
                         if (!isNaN(lat) && !isNaN(lon) && year != null) {
-                            let yearStr = String(year).trim();
-                            if (!yearGroups[yearStr]) yearGroups[yearStr] = [];
-                            yearGroups[yearStr].push({ stnNum, stnName, lat, lon });
+                            let yrStr = String(year).trim();
+                            if (!yearGroups[yrStr]) yearGroups[yrStr] = [];
+                            yearGroups[yrStr].push({ stnNum, stnName, lat, lon });
                         }
                     });
-
-                    var content3 = document.getElementById('content-3');
-                    content3.innerHTML = ''; 
-                    
+                    var content3 = document.getElementById('content-3'); content3.innerHTML = '';
                     Object.keys(yearGroups).sort().forEach(year => {
-                        var layerGroup = L.layerGroup();
-                        layerGroup.groupType = 'station';
-                        
+                        var layerGroup = L.layerGroup(); layerGroup.groupType = 'station';
                         yearGroups[year].forEach(stn => {
-                            var marker = L.circleMarker([stn.lat, stn.lon], {
-                                radius: 7, fillColor: '#ff7800', color: "#000", weight: 1, opacity: 1, fillOpacity: 0.8 
-                            });
+                            var marker = L.circleMarker([stn.lat, stn.lon], { radius: 7, fillColor: '#ff7800', color: "#000", weight: 1, opacity: 1, fillOpacity: 0.8 });
                             marker.bindPopup("<b>" + stn.stnName + "</b><br>Station Number: " + stn.stnNum + "<br>Started: " + year);
                             marker.bindTooltip(stn.stnNum + " - " + stn.stnName, { permanent: true, direction: 'right', className: 'station-label', offset: [7, 0] });
-                            
                             layerGroup.addLayer(marker);
                         });
-
-                        var label = document.createElement('label');
-                        label.className = 'layer-item';
-                        var cb = document.createElement('input');
-                        cb.type = 'checkbox';
+                        var label = document.createElement('label'); label.className = 'layer-item';
+                        var cb = document.createElement('input'); cb.type = 'checkbox';
                         cb.addEventListener('change', function() {
-                            if (this.checked) { map.addLayer(layerGroup); } 
-                            else { map.removeLayer(layerGroup); }
+                            if (this.checked) map.addLayer(layerGroup); else map.removeLayer(layerGroup);
                         });
-                        label.appendChild(cb);
-                        label.appendChild(document.createTextNode(" " + year));
-                        content3.appendChild(label);
+                        label.appendChild(cb); label.appendChild(document.createTextNode(" " + year)); content3.appendChild(label);
                     });
 
-                    const btnPlay = document.getElementById('btnPlayAnim');
-                    const btnStop = document.getElementById('btnStopAnim');
-                    const yearDisplay = document.getElementById('anim-year-display');
-                    let sortedYears = Object.keys(yearGroups).sort();
-                    let animationInterval;
-                    let currentYearIndex = 0;
-                    let activeAnimatedLayers = [];
-
-                    function clearAnimationLayers() {
-                        activeAnimatedLayers.forEach(layer => map.removeLayer(layer));
-                        activeAnimatedLayers = [];
-                    }
+                    const btnPlay = document.getElementById('btnPlayAnim'), btnStop = document.getElementById('btnStopAnim'), yearDisplay = document.getElementById('anim-year-display');
+                    let sortedYears = Object.keys(yearGroups).sort(), animationInterval, currentYearIndex = 0, activeAnimatedLayers = [];
+                    function clearAnimationLayers() { activeAnimatedLayers.forEach(l => map.removeLayer(l)); activeAnimatedLayers = []; }
 
                     btnPlay.addEventListener('click', function() {
-                        clearInterval(animationInterval);
-                        clearAnimationLayers();
-                        currentYearIndex = 0;
-                        document.querySelectorAll('#content-3 input[type="checkbox"]').forEach(cb => {
-                            if(cb.checked) cb.click();
-                        });
-
-                        btnPlay.style.display = 'none';
-                        btnStop.style.display = 'block';
-                        
+                        clearInterval(animationInterval); clearAnimationLayers(); currentYearIndex = 0;
+                        btnPlay.style.display = 'none'; btnStop.style.display = 'block';
                         animationInterval = setInterval(() => {
                             if (currentYearIndex >= sortedYears.length) {
-                                clearInterval(animationInterval);
-                                btnPlay.style.display = 'block';
-                                btnStop.style.display = 'none';
-                                btnPlay.innerText = "Restart Animation";
-                                return;
+                                clearInterval(animationInterval); btnPlay.style.display = 'block'; btnStop.style.display = 'none'; btnPlay.innerText = "Restart Animation"; return;
                             }
-                            
-                            let yr = sortedYears[currentYearIndex];
-                            yearDisplay.innerText = "Year: " + yr;
-                            
+                            let yr = sortedYears[currentYearIndex]; yearDisplay.innerText = "Year: " + yr;
                             var animLayerGroup = L.layerGroup();
                             yearGroups[yr].forEach(stn => {
-                                var marker = L.circleMarker([stn.lat, stn.lon], {
-                                    radius: 7, fillColor: '#ff7800', color: "#000", weight: 1, opacity: 1, fillOpacity: 0.8 
-                                });
+                                var marker = L.circleMarker([stn.lat, stn.lon], { radius: 7, fillColor: '#ff7800', color: "#000", weight: 1, opacity: 1, fillOpacity: 0.8 });
                                 marker.bindPopup("<b>" + stn.stnName + "</b><br>Started: " + yr);
                                 marker.bindTooltip(stn.stnName, { permanent: true, direction: 'right', className: 'station-label', offset: [7, 0] });
                                 animLayerGroup.addLayer(marker);
                             });
-                            
-                            map.addLayer(animLayerGroup);
-                            activeAnimatedLayers.push(animLayerGroup);
-                            
-                            currentYearIndex++;
-                        }, 800); 
+                            map.addLayer(animLayerGroup); activeAnimatedLayers.push(animLayerGroup); currentYearIndex++;
+                        }, 800);
                     });
-
                     btnStop.addEventListener('click', function() {
-                        clearInterval(animationInterval);
-                        clearAnimationLayers();
-                        yearDisplay.innerText = "Year: -";
-                        btnPlay.style.display = 'block';
-                        btnStop.style.display = 'none';
-                        btnPlay.innerText = "Play Animation";
+                        clearInterval(animationInterval); clearAnimationLayers(); yearDisplay.innerText = "Year: -";
+                        btnPlay.style.display = 'block'; btnStop.style.display = 'none'; btnPlay.innerText = "Play Animation";
                     });
-                },
-                error: function(err) {
-                    console.error("Error loading station CSV file:", err);
                 }
             });
         }
