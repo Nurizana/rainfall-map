@@ -61,50 +61,163 @@
         .leaflet-tooltip-left.station-label::before, 
         .leaflet-tooltip-right.station-label::before { display: none; }
 
-        /* Bottom Image Display Container (Width: 5cm, Height: 3cm) */
-        #climate-image-container {
+        /* 3x2 Multi-Box Graph Grid Display */
+        #station-grid-container {
             position: fixed;
-            bottom: 20px;
+            bottom: 10px;
             left: 50%;
             transform: translateX(-50%);
-            width: 10cm;
-            height: 7cm;
-            background: rgba(40, 44, 52, 0.95);
+            width: 95%;
+            max-width: 1100px;
+            background: rgba(20, 25, 35, 0.95);
             border: 2px solid #3182bd;
             border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.8);
             z-index: 2000;
             display: none;
-            padding: 4px;
-            box-sizing: border-box;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            padding: 8px;
+            box-sizing: border-box;
         }
-        #climate-image-container img {
+        #grid-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            font-size: 13px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 6px;
+        }
+        #grid-header-actions { display: flex; gap: 8px; }
+        #btn-clear-grid {
+            background: #e67e22; color: white; border: none; 
+            padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;
+        }
+        #btn-clear-grid:hover { background: #d35400; }
+        #btn-close-grid {
+            background: #e74c3c; color: white; border: none; 
+            border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-weight: bold;
+        }
+
+        #station-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 8px;
+            width: 100%;
+            height: 380px;
+        }
+
+        .grid-box {
+            background: rgba(40, 44, 52, 0.95);
+            border: 1px solid #444;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+        .grid-box.active { border-color: #3182bd; }
+        .grid-box-header {
+            background: rgba(15, 20, 28, 0.9);
+            color: #f1c40f;
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 4px 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .grid-box-header span {
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%;
+        }
+        .grid-box-actions { display: flex; gap: 4px; }
+        .btn-box-action {
+            background: #3182bd; color: white; border: none; 
+            border-radius: 3px; padding: 2px 6px; font-size: 10px; cursor: pointer; font-weight: bold;
+        }
+        .btn-box-action:hover { background: #6baed6; }
+        .btn-box-remove { background: #e74c3c; }
+        .btn-box-remove:hover { background: #c0392b; }
+
+        .grid-box-body {
+            flex: 1;
             width: 100%;
             height: 100%;
-            object-fit: contain;
-            border-radius: 4px;
-            background-color: #ffffff;
-        }
-        #climate-image-close {
-            position: absolute;
-            top: -10px;
-            right: -10px;
-            background: #e74c3c;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 22px;
-            height: 22px;
-            font-weight: bold;
-            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            background: #000;
+            overflow: hidden;
+        }
+        .grid-box-body img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background-color: #ffffff;
+        }
+        .empty-slot {
+            color: #666;
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            border: 1px dashed #444;
+            border-radius: 4px;
+        }
+
+        /* Image Expansion Modal */
+        #image-expand-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.88);
+            z-index: 10005;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        .expand-modal-box {
+            background: #1e2430;
+            border: 2px solid #3182bd;
+            border-radius: 8px;
+            width: 90vw;
+            height: 88vh;
+            display: flex;
+            flex-direction: column;
+            padding: 12px;
+            box-sizing: border-box;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.9);
+        }
+        .expand-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #444;
+            margin-bottom: 8px;
+        }
+        .expand-modal-header h3 { margin: 0; font-size: 16px; color: #f1c40f; }
+        #expand-modal-close {
+            background: #e74c3c; color: white; border: none; 
+            border-radius: 50%; width: 26px; height: 26px; cursor: pointer; 
+            font-weight: bold; font-size: 14px;
+        }
+        .expand-modal-body {
+            flex: 1; width: 100%; display: flex; 
+            justify-content: center; align-items: center; 
+            overflow: hidden; background: #000; border-radius: 4px;
+        }
+        .expand-modal-body img {
+            max-width: 100%; max-height: 100%; 
+            object-fit: contain; background-color: #fff;
         }
     </style>
 </head>
@@ -154,10 +267,31 @@
 
     <div id="map-climate"></div>
 
-    <!-- Fixed Bottom Image Popup Window -->
-    <div id="climate-image-container">
-        <button id="climate-image-close" title="Close">✕</button>
-        <img id="climate-image-display" src="" alt="Station Data Image">
+    <!-- 3x2 Station Graph Display Grid Panel -->
+    <div id="station-grid-container">
+        <div id="grid-header">
+            <span>📊 Station Graph Comparison Grid (Max 6 Stations)</span>
+            <div id="grid-header-actions">
+                <button id="btn-clear-grid" title="Clear all graphs">Clear All</button>
+                <button id="btn-close-grid" title="Close grid view">✕</button>
+            </div>
+        </div>
+        <div id="station-grid">
+            <!-- 6 Boxes generated dynamically -->
+        </div>
+    </div>
+
+    <!-- High-Resolution Graph Expansion Modal -->
+    <div id="image-expand-modal">
+        <div class="expand-modal-box">
+            <div class="expand-modal-header">
+                <h3 id="expand-modal-title">Station Graph</h3>
+                <button id="expand-modal-close" title="Close enlarged view">✕</button>
+            </div>
+            <div class="expand-modal-body">
+                <img id="expand-modal-img" src="" alt="Enlarged Station Graph">
+            </div>
+        </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -267,8 +401,21 @@
         document.getElementById('tabClimate').addEventListener('click', () => window.location.href = 'index_2.html');
         document.getElementById('tabKL').addEventListener('click', () => window.location.href = 'index_3.html');
 
-        document.getElementById('climate-image-close').addEventListener('click', () => {
-            document.getElementById('climate-image-container').style.display = 'none';
+        // Multi-Box Graph Grid & Station Logic
+        let activeStations = []; // Stores array of { name: string, src: string } up to 6 items
+
+        document.getElementById('btn-close-grid').addEventListener('click', () => {
+            document.getElementById('station-grid-container').style.display = 'none';
+        });
+
+        document.getElementById('btn-clear-grid').addEventListener('click', () => {
+            activeStations = [];
+            renderStationGrid();
+            document.getElementById('station-grid-container').style.display = 'none';
+        });
+
+        document.getElementById('expand-modal-close').addEventListener('click', () => {
+            document.getElementById('image-expand-modal').style.display = 'none';
         });
 
         let isClimateLoaded = false;
@@ -305,7 +452,7 @@
                             marker.bindTooltip(stnName, { permanent: true, direction: 'right', className: 'station-label', offset: [7, 0] });
                             
                             marker.on('click', function() {
-                                displayStationImage(stnName);
+                                addStationToGrid(stnName);
                             });
 
                             marker.addTo(mapClimate);
@@ -315,15 +462,53 @@
             });
         }
 
-        // Resolves and displays station figure from A_Data_1/
-        function displayStationImage(stnName) {
-            const container = document.getElementById('climate-image-container');
-            const img = document.getElementById('climate-image-display');
-            container.style.display = 'flex';
+        // Add station image to grid (Maximum 6)
+        function addStationToGrid(stnName) {
+            // Check if already in grid
+            const existingIndex = activeStations.findIndex(s => s.name === stnName);
+            if (existingIndex !== -1) {
+                document.getElementById('station-grid-container').style.display = 'flex';
+                return;
+            }
 
+            if (activeStations.length >= 6) {
+                alert("Maximum limit of 6 stations reached! Please remove a station from the grid to add another.");
+                document.getElementById('station-grid-container').style.display = 'flex';
+                return;
+            }
+
+            const stationObj = { name: stnName, src: '' };
+            activeStations.push(stationObj);
+
+            // Resolve and load image
+            resolveStationImageUrl(stnName, (resolvedUrl) => {
+                stationObj.src = resolvedUrl;
+                renderStationGrid();
+            });
+
+            document.getElementById('station-grid-container').style.display = 'flex';
+            renderStationGrid();
+        }
+
+        function removeStationFromGrid(index) {
+            activeStations.splice(index, 1);
+            renderStationGrid();
+            if (activeStations.length === 0) {
+                document.getElementById('station-grid-container').style.display = 'none';
+            }
+        }
+
+        function expandStationGraph(index) {
+            if (activeStations[index] && activeStations[index].src) {
+                document.getElementById('expand-modal-title').innerText = activeStations[index].name + " - Enlarged View";
+                document.getElementById('expand-modal-img').src = activeStations[index].src;
+                document.getElementById('image-expand-modal').style.display = 'flex';
+            }
+        }
+
+        // Resolves station image candidates from A_Data_1/
+        function resolveStationImageUrl(stnName, callback) {
             const cleanName = stnName.trim().replace(/\s+/g, '_');
-            
-            // Regional prefixes used in A_Data_1 filenames
             const prefixes = [
                 'Rainfall_Intensity_Tengah_Selatan_',
                 'Rainfall_Intensity_Sabah_',
@@ -347,16 +532,54 @@
             });
 
             let tryIndex = 0;
-            function tryNextCandidate() {
+            let testImg = new Image();
+
+            function tryNext() {
                 if (tryIndex < candidateUrls.length) {
-                    img.src = candidateUrls[tryIndex++];
+                    let url = candidateUrls[tryIndex++];
+                    testImg.onload = () => callback(url);
+                    testImg.onerror = tryNext;
+                    testImg.src = url;
                 } else {
-                    img.onerror = null;
+                    callback('');
                 }
             }
+            tryNext();
+        }
 
-            img.onerror = tryNextCandidate;
-            tryNextCandidate();
+        // Renders the 3x2 Grid (6 Boxes total)
+        function renderStationGrid() {
+            const gridEl = document.getElementById('station-grid');
+            gridEl.innerHTML = '';
+
+            for (let i = 0; i < 6; i++) {
+                const box = document.createElement('div');
+                box.className = 'grid-box';
+
+                if (i < activeStations.length) {
+                    const stn = activeStations[i];
+                    box.classList.add('active');
+                    box.innerHTML = `
+                        <div class="grid-box-header">
+                            <span title="${stn.name}">${stn.name}</span>
+                            <div class="grid-box-actions">
+                                <button class="btn-box-action" onclick="expandStationGraph(${i})" title="Expand Graph">🔍 Expand</button>
+                                <button class="btn-box-action btn-box-remove" onclick="removeStationFromGrid(${i})" title="Remove">✕</button>
+                            </div>
+                        </div>
+                        <div class="grid-box-body">
+                            ${stn.src ? `<img src="${stn.src}" alt="${stn.name}">` : '<span style="color:#aaa;font-size:11px;">Loading image...</span>'}
+                        </div>
+                    `;
+                } else {
+                    box.innerHTML = `
+                        <div class="empty-slot">
+                            + Slot ${i + 1} (Select station on map)
+                        </div>
+                    `;
+                }
+                gridEl.appendChild(box);
+            }
         }
     </script>
 </body>
