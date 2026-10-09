@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rainfall Map - Kuala Lumpur Monsoon Activity Centre</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        body { padding: 0; margin: 0; box-sizing: border-box; -webkit-user-select: none; -ms-user-select: none; user-select: none; overflow: hidden; background-color: #141923; }
+        html, body { height: 100%; width: 100%; }
+
+        #map-kl { height: 100%; width: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
+        
+        @media print { body { display: none !important; } }
+        body.blurred { filter: blur(10px); pointer-events: none; }
+        
+        #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; font-family: Arial, sans-serif; background-color: #141923; overflow: hidden; }
+        #bg-slider { position: absolute; top: 0; left: 0; height: 100%; display: flex; z-index: 1; }
+        .bg-slide { width: 100vw; flex-shrink: 0; height: 100%; background-size: cover; background-position: center; }
+        .bg-overlay-gradient { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(rgba(20, 25, 35, 0.8), rgba(20, 25, 35, 0.8)); z-index: 2; }
+        .auth-box { background: rgba(40, 44, 52, 0.95); padding: 35px; border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,0.7); text-align: center; width: 90%; max-width: 350px; border: 1px solid rgba(255, 255, 255, 0.1); z-index: 3; }
+        .auth-box h2 { margin-top: 0; margin-bottom: 25px; font-size: 22px; letter-spacing: 1px; }
+        .auth-box input, .auth-box button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 5px; border: none; box-sizing: border-box; }
+        .auth-box input { background: #1e1e1e; color: #fff; border: 1px solid #444; }
+        .auth-box input:focus { outline: none; border-color: #3182bd; }
+        .auth-box button { background: #3182bd; color: white; font-weight: bold; cursor: pointer; transition: background 0.3s; }
+        .auth-box button:hover { background: #6baed6; }
+        #auth-message { color: #f1c40f; font-size: 13px; margin-top: 15px; font-weight: bold; }
+
+        #timeout-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 10000; display: none; flex-direction: column; justify-content: center; align-items: center; color: white; font-family: Arial, sans-serif; }
+        .timeout-box { background: #e74c3c; padding: 30px; border-radius: 8px; text-align: center; width: 90%; max-width: 400px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        .timeout-box h2 { margin-top: 0; }
+        #countdown-timer { font-size: 48px; font-weight: bold; margin: 20px 0; color: yellow; }
+
+        #top-ui-container { position: fixed; top: 0; left: 0; width: 100%; height: 52px; background: transparent; border-bottom: 2px solid #3182bd; display: none; z-index: 2000; pointer-events: none; }
+        #top-tabs { position: absolute; bottom: 0; left: 55px; display: flex; flex-direction: row; gap: 5px; pointer-events: auto; }
+        .top-tab-btn { background: rgba(40, 44, 52, 0.9); color: #cbd5e1; border: 1px solid #444; border-bottom: none; border-radius: 8px 8px 0 0; padding: 0 15px; font-family: Arial, sans-serif; font-size: 13px; font-weight: bold; cursor: pointer; height: 40px; display: flex; align-items: center; justify-content: center; transition: all 0.3s; box-shadow: 2px -2px 5px rgba(0,0,0,0.3); }
+        .top-tab-btn:hover { background: rgba(58, 63, 75, 1); color: #fff; }
+        .top-tab-btn.active { background: #3182bd; color: white; border-color: #3182bd; }
+        .inline-arrow { display: inline-block; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 8px solid #ffffff; margin-left: 10px; }
+
+        #user-panel { position: absolute; right: 20px; bottom: 8px; display: flex; align-items: center; gap: 15px; color: #ffffff; font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; pointer-events: auto; text-shadow: 1px 1px 3px rgba(0,0,0,0.9), -1px -1px 3px rgba(0,0,0,0.9), 1px -1px 3px rgba(0,0,0,0.9), -1px 1px 3px rgba(0,0,0,0.9); }
+        #btn-app-logout { background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.5); text-shadow: none; }
+        #btn-app-logout:hover { background: #c0392b; }
+    </style>
+</head>
+<body>
+
+    <div id="auth-overlay">
+        <div id="bg-slider"></div>
+        <div class="bg-overlay-gradient"></div>
+        <div class="auth-box">
+            <h2>Analisa Ramalan Jangka Panjang</h2>
+            <input type="email" id="email" placeholder="Enter your email" required>
+            <input type="password" id="password" placeholder="Enter your password" required>
+            <button id="btnLogin">Sign In</button>
+            <button id="btnRegister">Register New Account</button>
+            <div id="auth-message"></div>
+        </div>
+    </div>
+
+    <div id="timeout-overlay">
+        <div class="timeout-box">
+            <h2>Session Expiring Soon</h2>
+            <p>You have been inactive. You will be automatically logged out in:</p>
+            <div id="countdown-timer">15</div>
+            <p>Move your mouse or press any key to stay logged in.</p>
+        </div>
+    </div>
+
+    <div id="top-ui-container">
+        <div id="top-tabs">
+            <div class="top-tab-btn" id="tabMain" title="Main Map">
+                <span>🏠 Main Map</span>
+            </div>
+            <div class="top-tab-btn" id="tabClimate" title="Malaysia Climate Change Scenarios">
+                <span>Malaysia Climate Change Scenarios.</span>
+                <span class="inline-arrow"></span>
+            </div>
+            <div class="top-tab-btn active" id="tabKL" title="Kuala Lumpur Monsoon Activity Centre">
+                <span>Kuala Lumpur Monsoon Activity Centre.</span>
+                <span class="inline-arrow"></span>
+            </div>
+        </div>
+        <div id="user-panel">
+            <span id="user-email-display"></span>
+            <button id="btn-app-logout">Log Out</button>
+        </div>
+    </div>
+
+    <div id="map-kl"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
+    <script>
+        // Background Slider
+        const mapImages = ['World_mapTravel.jpg', 'World_map.jpg', 'clasic map_3.jpg', 'clasic map_2.jpg', 'clasic map.jpg'];
+        const sliderElement = document.getElementById('bg-slider');
+        mapImages.forEach(src => {
+            const slide = document.createElement('div');
+            slide.className = 'bg-slide';
+            slide.style.backgroundImage = `url('${encodeURI(src)}')`;
+            sliderElement.appendChild(slide);
+        });
+        sliderElement.appendChild(sliderElement.children[0].cloneNode(true));
+        let currentSlide = 0;
+        setInterval(() => {
+            currentSlide++;
+            sliderElement.style.transition = 'transform 1s ease-in-out';
+            sliderElement.style.transform = `translateX(-${currentSlide * 100}vw)`;
+            if (currentSlide === mapImages.length) {
+                setTimeout(() => { sliderElement.style.transition = 'none'; currentSlide = 0; sliderElement.style.transform = `translateX(0)`; }, 1000);
+            }
+        }, 3000);
+
+        // Security Features
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        document.addEventListener('keydown', e => {
+            if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) || (e.ctrlKey && e.keyCode === 85)) {
+                e.preventDefault(); return false;
+            }
+        });
+        window.addEventListener('blur', () => document.body.classList.add('blurred'));
+        window.addEventListener('focus', () => document.body.classList.remove('blurred'));
+
+        // Firebase Auth
+        var firebaseConfig = {
+            apiKey: "AIzaSyAcGx3t733bHUh-k3VFgMdcWuRMY9LERC8",
+            authDomain: "rainfall-map-f20f5.firebaseapp.com",
+            projectId: "rainfall-map-f20f5",
+            storageBucket: "rainfall-map-f20f5.firebasestorage.app",
+            messagingSenderId: "789564767872",
+            appId: "1:789564767872:web:be84f6a41a448fbc8d7065"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        const emailInput = document.getElementById('email'), passInput = document.getElementById('password');
+        const btnLogin = document.getElementById('btnLogin'), btnRegister = document.getElementById('btnRegister');
+        const authMessage = document.getElementById('auth-message'), authOverlay = document.getElementById('auth-overlay');
+        const topUiContainer = document.getElementById('top-ui-container'), userEmailDisplay = document.getElementById('user-email-display'), btnAppLogout = document.getElementById('btn-app-logout');
+
+        // Idle Timer
+        let idleTimer, countdownInterval;
+        const IDLE_TIME = 30000, COUNTDOWN_TIME = 15;
+        let secondsLeft = COUNTDOWN_TIME;
+        const timeoutOverlay = document.getElementById('timeout-overlay'), countdownDisplay = document.getElementById('countdown-timer');
+
+        function startIdleTimer() { clearTimers(); idleTimer = setTimeout(showWarning, IDLE_TIME); }
+        function showWarning() {
+            secondsLeft = COUNTDOWN_TIME; countdownDisplay.innerText = secondsLeft; timeoutOverlay.style.display = 'flex';
+            countdownInterval = setInterval(() => {
+                secondsLeft--; countdownDisplay.innerText = secondsLeft;
+                if (secondsLeft <= 0) { clearTimers(); auth.signOut().then(() => { timeoutOverlay.style.display = 'none'; authMessage.innerText = "You were logged out due to inactivity."; }); }
+            }, 1000);
+        }
+        function clearTimers() { clearTimeout(idleTimer); clearInterval(countdownInterval); timeoutOverlay.style.display = 'none'; }
+        function resetTimer() { if (auth.currentUser) startIdleTimer(); }
+        ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'].forEach(evt => document.addEventListener(evt, resetTimer, true));
+
+        auth.onAuthStateChanged(user => {
+            if (user && user.emailVerified) {
+                authOverlay.style.display = 'none';
+                topUiContainer.style.display = 'block';
+                userEmailDisplay.innerText = user.email;
+                initializeKLMap();
+                startIdleTimer();
+            } else if (user) {
+                authMessage.innerText = "Please check your email and verify your account before logging in.";
+                auth.signOut(); clearTimers();
+            } else {
+                authOverlay.style.display = 'flex';
+                topUiContainer.style.display = 'none';
+                clearTimers();
+            }
+        });
+
+        btnRegister.addEventListener('click', () => {
+            authMessage.innerText = "Processing...";
+            auth.createUserWithEmailAndPassword(emailInput.value, passInput.value)
+                .then(res => { res.user.sendEmailVerification().then(() => { authMessage.innerText = "Registration successful! Please check your email."; auth.signOut(); }); })
+                .catch(err => authMessage.innerText = err.message);
+        });
+        btnLogin.addEventListener('click', () => {
+            authMessage.innerText = "Logging in...";
+            auth.signInWithEmailAndPassword(emailInput.value, passInput.value).catch(err => authMessage.innerText = err.message);
+        });
+        btnAppLogout.addEventListener('click', () => {
+            auth.signOut().then(() => { emailInput.value = ''; passInput.value = ''; authMessage.innerText = 'You have logged out successfully.'; });
+        });
+
+        // Tab Navigation
+        document.getElementById('tabMain').addEventListener('click', () => window.location.href = 'index.html');
+        document.getElementById('tabClimate').addEventListener('click', () => window.location.href = 'index_2.html');
+        document.getElementById('tabKL').addEventListener('click', () => window.location.href = 'index_3.html');
+
+        let isKLLoaded = false;
+        function initializeKLMap() {
+            if (isKLLoaded) return; isKLLoaded = true;
+            let mapKL = L.map('map-kl', { center: [3.1390, 101.6869], zoom: 10 });
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, attribution: 'Tiles &copy; Esri' }).addTo(mapKL);
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 }).addTo(mapKL);
+            
+            // Add custom KL Monsoon layers/controls for index_3 here
+        }
+    </script>
+</body>
+</html>
