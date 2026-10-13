@@ -124,23 +124,11 @@
         .monthly-control-box strong { display: block; margin-bottom: 8px; color: #333; font-size: 13px; }
         .monthly-control-box select { width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #ccc; font-size: 12px; }
 
-        #bottom-grid-container {
-            position: fixed; top: 75px; left: 60px; background: rgba(244, 246, 248, 0.95); padding: 12px;
-            border-radius: 8px; border: 1px solid #ccc; box-shadow: 0 4px 15px rgba(0,0,0,0.4); z-index: 1000;
-            display: none; font-family: Arial, sans-serif; max-height: calc(100vh - 100px); overflow-y: auto;
-        }
-        .grid-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; font-weight: bold; color: #333; }
-        .btn-clear-grid { background: #7f8c8d; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold; }
-        .btn-clear-grid:hover { background: #95a5a6; }
-        .graph-grid { display: grid; grid-template-columns: 300px; grid-template-rows: repeat(6, 120px); gap: 8px; }
-        .graph-box { background: #fff; border: 1px solid #ddd; border-radius: 4px; display: flex; justify-content: center; align-items: center; font-size: 12px; color: #999; position: relative; overflow: hidden; box-shadow: inset 0 0 5px rgba(0,0,0,0.05); }
-
         @media (max-width: 950px) { .top-tab-btn { padding: 0 8px; font-size: 11px; } #user-panel { gap: 10px; font-size: 12px; right: 10px; } }
         @media (max-width: 750px) {
             #top-tabs { left: 45px; } .top-tab-btn { height: 32px; font-size: 10px; } #user-email-display { display: none; } 
             .custom-control-panel { width: 200px; font-size: 12px; } .legend { font-size: 11px; max-height: 200px; padding: 8px; }
-            .auth-box { padding: 25px; } .auth-box h2 { font-size: 18px; } #bottom-grid-container { left: 50px; }
-            .graph-grid { grid-template-columns: 260px; grid-template-rows: repeat(6, 100px); }
+            .auth-box { padding: 25px; } .auth-box h2 { font-size: 18px; } 
         }
     </style>
 </head>
@@ -189,24 +177,6 @@
     </div>
 
     <div id="map"></div>
-
-    <div id="bottom-grid-container">
-        <div class="grid-header">
-            <span>Station Rainfall Accumulated Graphs</span>
-            <div>
-                <button id="btnClearGrid" class="btn-clear-grid">Clear Graphs</button>
-                <button id="btnCloseGrid" class="btn-clear-grid" style="background:#e74c3c; margin-left: 5px;">Close</button>
-            </div>
-        </div>
-        <div class="graph-grid" id="monthly-graph-grid">
-            <div class="graph-box" id="grid-box-0">Empty</div>
-            <div class="graph-box" id="grid-box-1">Empty</div>
-            <div class="graph-box" id="grid-box-2">Empty</div>
-            <div class="graph-box" id="grid-box-3">Empty</div>
-            <div class="graph-box" id="grid-box-4">Empty</div>
-            <div class="graph-box" id="grid-box-5">Empty</div>
-        </div>
-    </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -340,21 +310,6 @@
             }
         };
 
-        let activeGridCharts = [null, null, null, null, null, null];
-        let gridStationNames = [null, null, null, null, null, null];
-        document.addEventListener('click', function(e) {
-            if(e.target && e.target.id === 'btnClearGrid') {
-                for(let i=0; i<6; i++) {
-                    if(activeGridCharts[i]) activeGridCharts[i].destroy();
-                    activeGridCharts[i] = null; gridStationNames[i] = null;
-                    document.getElementById('grid-box-'+i).innerHTML = 'Empty';
-                }
-            }
-            if(e.target && e.target.id === 'btnCloseGrid') {
-                document.getElementById('bottom-grid-container').style.display = 'none';
-            }
-        });
-
         let isMapLoaded = false;
         function initializeMap() {
             if (isMapLoaded) return; isMapLoaded = true;
@@ -460,7 +415,6 @@
                         <span>5) Sum of Daily Rainfall</span><span id="icon-5" class="triangle">▼</span>
                     </div>
                     <div id="content-5" class="accordion-content">
-                        <div style="font-size: 11px; color: #e74c3c; margin-bottom: 8px; font-weight: bold;">Note: max is 6 stations</div>
                         <div class="monthly-control-box">
                             <select id="filter-month-simple">
                                 <option value="01">JAN</option><option value="02">FEB</option><option value="03">MAR</option>
@@ -477,7 +431,6 @@
                         <span>6) Sum of Monthly Rainfall</span><span id="icon-6" class="triangle">▼</span>
                     </div>
                     <div id="content-6" class="accordion-content">
-                        <div style="font-size: 11px; color: #e74c3c; margin-bottom: 8px; font-weight: bold;">Note: max is 6 stations</div>
                         <div class="monthly-control-box">
                             <select id="filter-year-monthly">
                                 <option value="2024" style="font-weight:bold;">2024</option>
@@ -498,7 +451,6 @@
                 const year = "2024", month = document.getElementById('filter-month-simple').value;
                 const statusLabel = document.getElementById('data-status-daily');
                 statusLabel.innerText = "Fetching Daily Data..."; statusLabel.style.color = "#f39c12";
-                document.getElementById('bottom-grid-container').style.display = 'block';
 
                 const githubRawUrl = `https://raw.githubusercontent.com/Nurizana/rainfall-map/main/Data1/Hourly_PMSS_${year}${month}_WCoordinate.csv`;
                 Papa.parse(githubRawUrl, {
@@ -535,28 +487,13 @@
                             let stn = stationGroups[stnId], displayName = stn.name;
                             var marker = L.circleMarker([stn.lat, stn.lon], { radius: 8, fillColor: '#ff69b4', color: "#000", weight: 1, opacity: 1, fillOpacity: 0.9 });
                             let canvasId = 'chart-' + idx;
-                            marker.bindPopup(`<div style="width:250px;"><b>${displayName}</b><br/>Total Rain: ${stn.sum.toFixed(2)} mm<br/><canvas id="${canvasId}" width="250" height="150"></canvas><i>Click marker to pin to bottom grid</i></div>`);
+                            marker.bindPopup(`<div style="width:250px;"><b>${displayName}</b><br/>Total Rain: ${stn.sum.toFixed(2)} mm<br/><canvas id="${canvasId}" width="250" height="150"></canvas></div>`);
                             marker.bindTooltip(displayName, { permanent: true, direction: 'right', className: 'station-label', offset: [8, 0] });
                             marker.on('popupopen', function() {
                                 let labels = [], readings = [], days = Object.keys(stn.dailyData).map(Number).sort((a, b) => a - b);
                                 days.forEach(d => { labels.push(d.toString()); readings.push(stn.dailyData[d]); });
                                 var ctx = document.getElementById(canvasId).getContext('2d');
                                 new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [{ label: 'Rainfall (mm)', data: readings, backgroundColor: 'rgba(255, 105, 180, 0.6)', borderColor: 'rgba(255, 20, 147, 1)', borderWidth: 1 }] }, options: { scales: { y: { beginAtZero: true } } } });
-                            });
-                            marker.on('click', function() {
-                                if(gridStationNames.includes(displayName)) return;
-                                let emptyIndex = gridStationNames.findIndex(name => name === null);
-                                if(emptyIndex !== -1) {
-                                    gridStationNames[emptyIndex] = displayName;
-                                    document.getElementById('grid-box-' + emptyIndex).innerHTML = `<canvas id="canvas-grid-${emptyIndex}"></canvas>`;
-                                    let labels = [], readings = [], days = Object.keys(stn.dailyData).map(Number).sort((a, b) => a - b);
-                                    days.forEach(d => { labels.push(d.toString()); readings.push(stn.dailyData[d]); });
-                                    let ctxGrid = document.getElementById(`canvas-grid-${emptyIndex}`).getContext('2d');
-                                    activeGridCharts[emptyIndex] = new Chart(ctxGrid, {
-                                        type: 'bar', data: { labels: labels, datasets: [{ data: readings, backgroundColor: 'rgba(255, 105, 180, 0.8)' }] },
-                                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, title: { display: true, text: displayName + ' (Daily)', font: {size: 11} } }, scales: { x: { ticks: { font: { size: 8 } } }, y: { beginAtZero: true, ticks: { font: { size: 8 } } } } }
-                                    });
-                                } else alert("Maximum of 6 stations can be displayed in the grid.");
                             });
                             customDataLayer.addLayer(marker);
                         });
@@ -571,7 +508,6 @@
                 const year = document.getElementById('filter-year-monthly').value;
                 const statusLabel = document.getElementById('data-status-monthly');
                 statusLabel.innerText = "Fetching Monthly Data..."; statusLabel.style.color = "#f39c12";
-                document.getElementById('bottom-grid-container').style.display = 'block';
 
                 let fetchPromises = [], folder = (year === "2025") ? "Data2" : "Data1";
                 for (let i = 1; i <= 12; i++) {
@@ -611,23 +547,8 @@
                     Object.keys(stationGroups).forEach((stnId) => {
                         let stn = stationGroups[stnId], displayName = stn.name;
                         var marker = L.circleMarker([stn.lat, stn.lon], { radius: 8, fillColor: '#8e44ad', color: "#000", weight: 1, opacity: 1, fillOpacity: 0.9 });
-                        marker.bindPopup(`<div style="width:200px;"><b>${displayName}</b><br/>Yearly Total: ${stn.totalSum.toFixed(2)} mm<br/><i>Click marker to pin monthly sums to bottom grid</i></div>`);
+                        marker.bindPopup(`<div style="width:200px;"><b>${displayName}</b><br/>Yearly Total: ${stn.totalSum.toFixed(2)} mm</div>`);
                         marker.bindTooltip(displayName, { permanent: true, direction: 'right', className: 'station-label', offset: [8, 0] });
-                        marker.on('click', function() {
-                            if(gridStationNames.includes(displayName)) return;
-                            let emptyIndex = gridStationNames.findIndex(name => name === null);
-                            if(emptyIndex !== -1) {
-                                gridStationNames[emptyIndex] = displayName;
-                                document.getElementById('grid-box-' + emptyIndex).innerHTML = `<canvas id="canvas-grid-${emptyIndex}"></canvas>`;
-                                let labels = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-                                let readings = stn.monthlySums.map(v => v !== null ? v.toFixed(2) : null);
-                                let ctxGrid = document.getElementById(`canvas-grid-${emptyIndex}`).getContext('2d');
-                                activeGridCharts[emptyIndex] = new Chart(ctxGrid, {
-                                    type: 'bar', data: { labels: labels, datasets: [{ data: readings, backgroundColor: 'rgba(142, 68, 173, 0.8)' }] },
-                                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, title: { display: true, text: displayName + ' (Monthly)', font: {size: 11} } }, scales: { x: { ticks: { font: { size: 8 } } }, y: { beginAtZero: true, ticks: { font: { size: 8 } } } } }
-                                });
-                            } else alert("Maximum of 6 stations can be displayed in the grid.");
-                        });
                         customDataLayer.addLayer(marker);
                     });
                     customDataLayer.addTo(map);
