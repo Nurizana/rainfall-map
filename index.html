@@ -158,6 +158,35 @@
             z-index: 10;
             font-size: 16px;
         }
+        
+        /* Modal for Enlarged Graph */
+        #enlarged-graph-modal {
+            display: none; 
+            position: fixed; 
+            top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0, 0, 0, 0.85); 
+            z-index: 10005; 
+            justify-content: center; 
+            align-items: center; 
+            font-family: Arial, sans-serif;
+        }
+        .enlarged-graph-content {
+            background: white; 
+            border-radius: 8px; 
+            padding: 20px; 
+            width: 80%; max-width: 900px; 
+            height: 70%; max-height: 600px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        .enlarged-graph-close {
+            position: absolute; top: 10px; right: 15px; 
+            font-size: 24px; font-weight: bold; cursor: pointer; color: #e74c3c; 
+        }
+        .enlarged-graph-close:hover { color: #c0392b; }
+        .enlarged-graph-inner { flex-grow: 1; position: relative; width: 100%; height: 100%; }
 
         @media (max-width: 950px) { .top-tab-btn { padding: 0 8px; font-size: 11px; } #user-panel { gap: 10px; font-size: 12px; right: 10px; } }
         @media (max-width: 750px) {
@@ -188,6 +217,17 @@
             <p>You have been inactive. You will be automatically logged out in:</p>
             <div id="countdown-timer">15</div>
             <p>Move your mouse or press any key to stay logged in.</p>
+        </div>
+    </div>
+
+    <!-- Modal overlay for the enlarged daily graph -->
+    <div id="enlarged-graph-modal">
+        <div class="enlarged-graph-content">
+            <span class="enlarged-graph-close" id="close-enlarged-modal" title="Close">✖</span>
+            <h3 id="enlarged-graph-title" style="margin-top:0; text-align:center; color:#333;">Station Rainfall</h3>
+            <div class="enlarged-graph-inner">
+                <canvas id="enlarged-canvas"></canvas>
+            </div>
         </div>
     </div>
 
@@ -346,6 +386,42 @@
             }
         };
 
+        // --- ENLARGED MODAL LOGIC ---
+        let enlargedChartInstance = null;
+        document.getElementById('close-enlarged-modal').addEventListener('click', () => {
+            document.getElementById('enlarged-graph-modal').style.display = 'none';
+        });
+
+        function showEnlargedGraph(stationName, labels, dataReadings) {
+            document.getElementById('enlarged-graph-modal').style.display = 'flex';
+            document.getElementById('enlarged-graph-title').innerText = `${stationName} - Daily Rainfall`;
+
+            const ctx = document.getElementById('enlarged-canvas').getContext('2d');
+            if (enlargedChartInstance) { enlargedChartInstance.destroy(); }
+
+            enlargedChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Rainfall (mm)',
+                        data: dataReadings,
+                        backgroundColor: 'rgba(255, 105, 180, 0.6)',
+                        borderColor: 'rgba(255, 20, 147, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+        // -----------------------------
+
         let isMapLoaded = false;
         let selectedMonthlyStations = []; // New state array for Layer 6 graphs
 
@@ -486,7 +562,7 @@
 
             let customDataLayer = L.layerGroup();
             
-            // Function to render the new Layer 6 bottom graphs dynamically
+            // Function to render the Layer 6 bottom graphs dynamically
             function renderLayer6BottomCharts() {
                 const container = document.getElementById('bottom-charts-container');
                 container.innerHTML = '';
@@ -576,13 +652,29 @@
                             let stn = stationGroups[stnId], displayName = stn.name;
                             var marker = L.circleMarker([stn.lat, stn.lon], { radius: 8, fillColor: '#ff69b4', color: "#000", weight: 1, opacity: 1, fillOpacity: 0.9 });
                             let canvasId = 'chart-' + idx;
-                            marker.bindPopup(`<div style="width:250px;"><b>${displayName}</b><br/>Total Rain: ${stn.sum.toFixed(2)} mm<br/><canvas id="${canvasId}" width="250" height="150"></canvas></div>`);
+                            let btnId = 'btn-enlarge-' + idx;
+                            
+                            // Updated popup with an Enlarge button
+                            marker.bindPopup(`
+                                <div style="width:250px;">
+                                    <b>${displayName}</b><br/>Total Rain: ${stn.sum.toFixed(2)} mm<br/>
+                                    <canvas id="${canvasId}" width="250" height="150"></canvas>
+                                    <button id="${btnId}" style="width:100%; padding:6px; margin-top:8px; background:#e84393; color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">Enlarge Graph</button>
+                                </div>
+                            `);
                             marker.bindTooltip(displayName, { permanent: true, direction: 'right', className: 'station-label', offset: [8, 0] });
+                            
                             marker.on('popupopen', function() {
                                 let labels = [], readings = [], days = Object.keys(stn.dailyData).map(Number).sort((a, b) => a - b);
                                 days.forEach(d => { labels.push(d.toString()); readings.push(stn.dailyData[d]); });
+                                
                                 var ctx = document.getElementById(canvasId).getContext('2d');
                                 new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [{ label: 'Rainfall (mm)', data: readings, backgroundColor: 'rgba(255, 105, 180, 0.6)', borderColor: 'rgba(255, 20, 147, 1)', borderWidth: 1 }] }, options: { scales: { y: { beginAtZero: true } } } });
+
+                                // Event Listener for the Enlarge button inside this specific popup
+                                document.getElementById(btnId).addEventListener('click', function() {
+                                    showEnlargedGraph(displayName, labels, readings);
+                                });
                             });
                             customDataLayer.addLayer(marker);
                         });
@@ -593,7 +685,7 @@
                 });
             });
 
-            // UPDATED: Layer 6 Functionality implementation
+            // Layer 6 Functionality implementation
             document.getElementById('btnLoadMonthlySum').addEventListener('click', function() {
                 const year = document.getElementById('filter-year-monthly').value;
                 const statusLabel = document.getElementById('data-status-monthly');
