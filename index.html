@@ -530,6 +530,11 @@
                     </div>
                     <div id="content-5" class="accordion-content">
                         <div class="monthly-control-box">
+                            <select id="filter-year-daily" style="margin-bottom: 5px;">
+                                <option value="2024" style="font-weight:bold;">2024</option>
+                                <option value="2025">2025</option>
+                                <option value="2026">2026</option>
+                            </select>
                             <select id="filter-month-simple">
                                 <option value="01">JAN</option><option value="02">FEB</option><option value="03">MAR</option>
                                 <option value="04">APR</option><option value="05">MAY</option><option value="06">JUN</option>
@@ -612,12 +617,16 @@
                 });
             }
 
+            // Layer 5 Functionality implementation
             document.getElementById('btnLoadDaily').addEventListener('click', function() {
-                const year = "2024", month = document.getElementById('filter-month-simple').value;
+                const year = document.getElementById('filter-year-daily').value;
+                const month = document.getElementById('filter-month-simple').value;
                 const statusLabel = document.getElementById('data-status-daily');
                 statusLabel.innerText = "Fetching Daily Data..."; statusLabel.style.color = "#f39c12";
 
-                const githubRawUrl = `https://raw.githubusercontent.com/Nurizana/rainfall-map/main/Data1/Hourly_PMSS_${year}${month}_WCoordinate.csv`;
+                const folder = (year === "2025") ? "Data2" : "Data1"; // Direct folder logic based on GitHub repo structure
+                const githubRawUrl = `https://raw.githubusercontent.com/Nurizana/rainfall-map/main/${folder}/Hourly_PMSS_${year}${month}_WCoordinate.csv`;
+                
                 Papa.parse(githubRawUrl, {
                     download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
                     complete: function(results) {
