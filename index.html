@@ -124,6 +124,41 @@
         .monthly-control-box strong { display: block; margin-bottom: 8px; color: #333; font-size: 13px; }
         .monthly-control-box select { width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #ccc; font-size: 12px; }
 
+        /* Bottom Charts Container Styling */
+        #bottom-charts-container {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+            pointer-events: none; /* Allows interacting with map behind empty space */
+        }
+        .chart-box {
+            width: 10cm;
+            height: 5cm;
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid #8e44ad;
+            border-radius: 8px;
+            padding: 5px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            pointer-events: auto; /* Re-enable clicks for the chart area */
+            position: relative;
+        }
+        .chart-box-inner { width: 100%; height: 100%; }
+        .close-chart {
+            position: absolute;
+            top: 2px;
+            right: 5px;
+            cursor: pointer;
+            color: #e74c3c;
+            font-weight: bold;
+            z-index: 10;
+            font-size: 16px;
+        }
+
         @media (max-width: 950px) { .top-tab-btn { padding: 0 8px; font-size: 11px; } #user-panel { gap: 10px; font-size: 12px; right: 10px; } }
         @media (max-width: 750px) {
             #top-tabs { left: 45px; } .top-tab-btn { height: 32px; font-size: 10px; } #user-email-display { display: none; } 
@@ -177,6 +212,7 @@
     </div>
 
     <div id="map"></div>
+    <div id="bottom-charts-container"></div> <!-- Container for Layer 6 graphs -->
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -311,6 +347,8 @@
         };
 
         let isMapLoaded = false;
+        let selectedMonthlyStations = []; // New state array for Layer 6 graphs
+
         function initializeMap() {
             if (isMapLoaded) return; isMapLoaded = true;
 
@@ -447,6 +485,57 @@
             accordionControl.addTo(map);
 
             let customDataLayer = L.layerGroup();
+            
+            // Function to render the new Layer 6 bottom graphs dynamically
+            function renderLayer6BottomCharts() {
+                const container = document.getElementById('bottom-charts-container');
+                container.innerHTML = '';
+                
+                selectedMonthlyStations.forEach((stn, index) => {
+                    const box = document.createElement('div');
+                    box.className = 'chart-box';
+                    
+                    box.innerHTML = `
+                        <span class="close-chart" data-id="${stn.id}" title="Remove graph">✖</span>
+                        <div class="chart-box-inner"><canvas id="monthly-bottom-chart-${index}"></canvas></div>
+                    `;
+                    container.appendChild(box);
+                    
+                    // Bind close event
+                    box.querySelector('.close-chart').addEventListener('click', function() {
+                        selectedMonthlyStations = selectedMonthlyStations.filter(item => item.id !== stn.id);
+                        renderLayer6BottomCharts();
+                    });
+
+                    // Render Chart.js
+                    const ctx = document.getElementById(`monthly-bottom-chart-${index}`).getContext('2d');
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                            datasets: [{
+                                label: stn.name,
+                                data: stn.data.map(val => val === null ? 0 : val),
+                                backgroundColor: 'rgba(142, 68, 173, 0.7)',
+                                borderColor: 'rgba(142, 68, 173, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: true, position: 'top', labels: { font: { size: 10 } } }
+                            },
+                            scales: {
+                                y: { beginAtZero: true, ticks: { font: { size: 9 } } },
+                                x: { ticks: { font: { size: 9 } } }
+                            }
+                        }
+                    });
+                });
+            }
+
             document.getElementById('btnLoadDaily').addEventListener('click', function() {
                 const year = "2024", month = document.getElementById('filter-month-simple').value;
                 const statusLabel = document.getElementById('data-status-daily');
@@ -504,10 +593,15 @@
                 });
             });
 
+            // UPDATED: Layer 6 Functionality implementation
             document.getElementById('btnLoadMonthlySum').addEventListener('click', function() {
                 const year = document.getElementById('filter-year-monthly').value;
                 const statusLabel = document.getElementById('data-status-monthly');
                 statusLabel.innerText = "Fetching Monthly Data..."; statusLabel.style.color = "#f39c12";
+
+                // Clear previous bottom graphs when requesting new data
+                selectedMonthlyStations = [];
+                renderLayer6BottomCharts();
 
                 let fetchPromises = [], folder = (year === "2025") ? "Data2" : "Data1";
                 for (let i = 1; i <= 12; i++) {
@@ -547,8 +641,30 @@
                     Object.keys(stationGroups).forEach((stnId) => {
                         let stn = stationGroups[stnId], displayName = stn.name;
                         var marker = L.circleMarker([stn.lat, stn.lon], { radius: 8, fillColor: '#8e44ad', color: "#000", weight: 1, opacity: 1, fillOpacity: 0.9 });
-                        marker.bindPopup(`<div style="width:200px;"><b>${displayName}</b><br/>Yearly Total: ${stn.totalSum.toFixed(2)} mm</div>`);
+                        
+                        marker.bindPopup(`<div style="width:200px;"><b>${displayName}</b><br/>Yearly Total: ${stn.totalSum.toFixed(2)} mm<br/><br/><i style="font-size:11px; color:#555;">Click the marker again to toggle monthly graph below.</i></div>`);
                         marker.bindTooltip(displayName, { permanent: true, direction: 'right', className: 'station-label', offset: [8, 0] });
+                        
+                        // Handle clicking to add graph
+                        marker.on('click', function() {
+                            let existingIndex = selectedMonthlyStations.findIndex(s => s.id === stnId);
+                            if (existingIndex > -1) {
+                                // Deselect if already selected
+                                selectedMonthlyStations.splice(existingIndex, 1);
+                            } else {
+                                if (selectedMonthlyStations.length >= 6) {
+                                    alert("Maximum limit of 6 stations reached! Please remove an existing graph first by clicking the '✖' on the graph.");
+                                    return;
+                                }
+                                selectedMonthlyStations.push({
+                                    id: stnId,
+                                    name: displayName,
+                                    data: stn.monthlySums
+                                });
+                            }
+                            renderLayer6BottomCharts();
+                        });
+
                         customDataLayer.addLayer(marker);
                     });
                     customDataLayer.addTo(map);
