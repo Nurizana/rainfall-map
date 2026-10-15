@@ -700,7 +700,7 @@
                 });
             });
 
-            // UPDATED: Layer 6 Functionality implementation fetching the new Main Data CSV
+            // UPDATED: Layer 6 Functionality implementation fetching the new Main Data CSV (with header trimming)
             document.getElementById('btnLoadMonthlySum').addEventListener('click', function() {
                 const year = document.getElementById('filter-year-monthly').value;
                 const statusLabel = document.getElementById('data-status-monthly');
@@ -719,6 +719,10 @@
                     header: true, 
                     dynamicTyping: true, 
                     skipEmptyLines: true, 
+                    // Crucial fix: Trim whitespace from headers like "YEAR " and "MONTH "
+                    transformHeader: function(h) {
+                        return h.trim();
+                    },
                     complete: function(results) {
                         map.removeLayer(customDataLayer); 
                         customDataLayer = L.layerGroup();
