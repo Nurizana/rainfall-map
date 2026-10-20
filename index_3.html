@@ -44,6 +44,17 @@
         #user-panel { position: absolute; right: 20px; bottom: 8px; display: flex; align-items: center; gap: 15px; color: #ffffff; font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; pointer-events: auto; text-shadow: 1px 1px 3px rgba(0,0,0,0.9), -1px -1px 3px rgba(0,0,0,0.9), 1px -1px 3px rgba(0,0,0,0.9), -1px 1px 3px rgba(0,0,0,0.9); }
         #btn-app-logout { background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.5); text-shadow: none; }
         #btn-app-logout:hover { background: #c0392b; }
+
+        /* Custom Styles for SST Control and Legend */
+        .sst-control-panel { background: rgba(40, 44, 52, 0.95); padding: 15px; border-radius: 8px; color: white; font-family: Arial, sans-serif; box-shadow: 0 4px 10px rgba(0,0,0,0.5); border: 1px solid #444; pointer-events: auto; }
+        .sst-control-panel h4 { margin: 0 0 10px 0; font-size: 15px; color: #cbd5e1; }
+        .sst-dropdown { width: 100%; padding: 8px; border-radius: 4px; background: #1e1e1e; color: white; border: 1px solid #555; cursor: pointer; appearance: none; -webkit-appearance: none; background-image: url('data:image/svg+xml;utf8,<svg fill="white" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>'); background-repeat: no-repeat; background-position-x: 95%; background-position-y: center; }
+        .sst-dropdown:focus { outline: none; border-color: #3182bd; }
+        
+        .sst-legend { background: rgba(40, 44, 52, 0.95); padding: 15px; border-radius: 8px; color: white; font-family: Arial, sans-serif; border: 1px solid #444; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .sst-legend h4 { margin: 0 0 10px 0; font-size: 14px; text-align: center; }
+        .legend-gradient { background: linear-gradient(to top, blue, cyan, yellow, red); width: 25px; height: 120px; float: left; border: 1px solid #222; }
+        .legend-labels { display: flex; flex-direction: column; justify-content: space-between; height: 120px; margin-left: 35px; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -95,6 +106,10 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    
+    <!-- GeoTIFF reading and rendering libraries -->
+    <script src="https://unpkg.com/georaster"></script>
+    <script src="https://unpkg.com/georaster-layer-for-leaflet"></script>
 
     <script>
         // Background Slider
@@ -199,13 +214,112 @@
         document.getElementById('tabKL').addEventListener('click', () => window.location.href = 'index_3.html');
 
         let isKLLoaded = false;
+        let mapKL;
+        let currentSSTLayer = null;
+
         function initializeKLMap() {
             if (isKLLoaded) return; isKLLoaded = true;
-            let mapKL = L.map('map-kl', { center: [3.1390, 101.6869], zoom: 10 });
+            
+            // Adjusting initial zoom to see broader SST data efficiently
+            mapKL = L.map('map-kl', { center: [3.1390, 101.6869], zoom: 4 });
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, attribution: 'Tiles &copy; Esri' }).addTo(mapKL);
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 }).addTo(mapKL);
             
-            // Add custom KL Monsoon layers/controls for index_3 here
+            // Add Custom Dropdown Control for SST
+            var sstControl = L.control({position: 'topright'});
+            sstControl.onAdd = function (map) {
+                var div = L.DomUtil.create('div', 'sst-control-panel');
+                L.DomEvent.disableClickPropagation(div);
+                
+                div.innerHTML = `
+                    <h4>Sea Surface Temperature (SST)</h4>
+                    <select id="sst-month-select" class="sst-dropdown">
+                        <option value="none">-- Select Month --</option>
+                        <option value="May">May 2026</option>
+                        <option value="Jun">June 2026</option>
+                        <option value="Jul">July 2026</option>
+                        <option value="Aug">August 2026</option>
+                        <option value="Sep">September 2026</option>
+                    </select>
+                `;
+                return div;
+            };
+            sstControl.addTo(mapKL);
+
+            // Add Legend
+            var legend = L.control({position: 'bottomright'});
+            legend.onAdd = function (map) {
+                var div = L.DomUtil.create('div', 'sst-legend');
+                div.innerHTML = `
+                    <h4>SST (°C)</h4>
+                    <div class="legend-gradient"></div>
+                    <div class="legend-labels">
+                        <span>35°C</span>
+                        <span>30°C</span>
+                        <span>25°C</span>
+                        <span>20°C</span>
+                    </div>
+                `;
+                return div;
+            };
+            legend.addTo(mapKL);
+
+            // Function to interpolate color from Blue -> Cyan -> Yellow -> Red
+            function getColor(value) {
+                if (value < 0 || value > 50) return null; // Ignore invalid values/landmasks
+                
+                let min = 20, max = 35; // typical SST range
+                let ratio = (value - min) / (max - min);
+                ratio = Math.max(0, Math.min(1, ratio)); // Clamp between 0 and 1
+
+                let r, g, b;
+                if (ratio < 0.33) {
+                    // Blue to Cyan
+                    r = 0; g = Math.round(255 * (ratio / 0.33)); b = 255;
+                } else if (ratio < 0.66) {
+                    // Cyan to Yellow
+                    let localRatio = (ratio - 0.33) / 0.33;
+                    r = Math.round(255 * localRatio); g = 255; b = Math.round(255 * (1 - localRatio));
+                } else {
+                    // Yellow to Red
+                    let localRatio = (ratio - 0.66) / 0.34;
+                    r = 255; g = Math.round(255 * (1 - localRatio)); b = 0;
+                }
+                return `rgb(${r},${g},${b})`;
+            }
+
+            // Handle Dropdown Change
+            document.getElementById('sst-month-select').addEventListener('change', function(e) {
+                const selectedMonth = e.target.value;
+                
+                // Clear existing layer
+                if (currentSSTLayer) {
+                    mapKL.removeLayer(currentSSTLayer);
+                    currentSSTLayer = null;
+                }
+
+                if (selectedMonth === 'none') return;
+
+                // Base URL pointing to the raw repository files matching the referenced github image
+                const url = `https://raw.githubusercontent.com/Nurizana/rainfall-map/main/SST/Average_SST_2026_${selectedMonth}.tif`;
+
+                fetch(url)
+                    .then(response => response.arrayBuffer())
+                    .then(arrayBuffer => {
+                        parseGeoraster(arrayBuffer).then(georaster => {
+                            currentSSTLayer = new GeoRasterLayer({
+                                georaster: georaster,
+                                opacity: 0.7,
+                                resolution: 256,
+                                pixelValuesToColorFn: values => {
+                                    return getColor(values[0]);
+                                }
+                            });
+                            currentSSTLayer.addTo(mapKL);
+                        });
+                    })
+                    .catch(error => console.error('Error loading the GeoTIFF:', error));
+            });
         }
     </script>
 </body>
